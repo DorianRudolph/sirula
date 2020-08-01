@@ -5,7 +5,9 @@ use freedesktop_entry_parser::parse_entry;
 use locale_settings::locale::{get_locale, set_locale_all_from_env, Category};
 use locale_types::{Locale, LocaleString, LocaleIdentifier};
 use std::str::FromStr;
-
+use pathsearch::find_executable_in_path;
+use std::fs::metadata;
+use std::os::unix::fs::PermissionsExt;
 
 #[derive(Debug)]
 struct ApplicationEntry {
@@ -41,9 +43,15 @@ impl ApplicationEntry {
         let name = stry!(get_attr("Name"), Some, "Name missing");
         let comment = get_attr("Comment");
         let exec = stry!(section.attr("Exec"), Some, "Exec missing");
-        if let Some(try_exec) = section.attr("TryExec") {
 
+        if let Some(try_exec) = section.attr("TryExec") {
+            let exec_path = stry!(find_executable_in_path(try_exec), Some, "TryExec file not found");
+            let meta = stry!(metadata(exec_path), Ok, "Could not read TryExec metadata");
+            if !meta.is_file() || meta.permissions().mode() & 0o111 == 0 {
+                return Err("TryExec is not an executable file");
+            }
         }
+
         let icon = get_attr("Icon");
         Ok(ApplicationEntry {
             name: name.to_string(),
@@ -83,6 +91,8 @@ fn main() -> Result<(), &'static str> {
     // loc = Locale::from_str("de_DE.UTF-8@test").unwrap();
     // println!("{:?}", get_locale_strings(&loc));
 
+    println!("{:?}", find_executable_in_path("ls"));
+    println!("{:?}", find_executable_in_path("/asdf/ls"));
 
     Ok(())
 }
