@@ -1,0 +1,12 @@
+[package]
+name = "launcher"
+version = "0.1.0"
+authors = ["Dorian Rudolph <dorian@mail.upb.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+freedesktop_entry_parser = "1.0.0"
+locale-settings = "0.3.0"
+locale-types = "0.3.0"
