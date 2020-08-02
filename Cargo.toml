@@ -12,3 +12,6 @@ locale-types = "0.4.0"
 pathsearch = "0.2.0"
 libc = "0.2.74"
 gtk-layer-shell = { path = "../gtk-layer-shell-rs" }
+gtk = "0.9.1"
+gio = "0.9.0"
+gdk = "0.13.0"
