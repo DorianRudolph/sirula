@@ -1,0 +1,12 @@
+{
+    "saveAndRun": {
+        "commands": [
+          {
+            "match": ".rs",
+            "cmd": "cargo check",
+            "useShortcut": false,
+            "silent": false
+          },
+        ]
+      }
+}

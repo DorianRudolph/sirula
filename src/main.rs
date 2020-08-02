@@ -1,6 +1,6 @@
 use std::{
-    cmp::Ordering, path::Path, result::Result, vec::Vec, collections::HashMap,
-    fs, os::unix::fs::PermissionsExt, fs::metadata, str::FromStr, ffi::{CStr, CString},
+    cmp::{Ordering, Ord}, path::Path, result::Result, vec::Vec, collections::HashMap,
+    fs, os::{raw::c_char,unix::fs::PermissionsExt}, fs::metadata, str::FromStr, ffi::{CStr, CString},
     ptr};
 use freedesktop_entry_parser::parse_entry;
 use locale_types::{Locale, LocaleIdentifier};
@@ -10,8 +10,10 @@ use libc::{strcoll, setlocale, LC_COLLATE, LC_MESSAGES};
 #[derive(Debug)]
 struct ApplicationEntry {
     name: String,
+    generic_name: Option<String>,
     comment: Option<String>,
     exec: String,
+    terminal: bool,
     icon: Option<String>
 }
 
@@ -39,8 +41,13 @@ impl ApplicationEntry {
         };
 
         let name = stry!(get_attr("Name"), Some, "Name missing");
+        let generic_name = get_attr("GenericName");
         let comment = get_attr("Comment");
         let exec = stry!(section.attr("Exec"), Some, "Exec missing");
+        let terminal = match section.attr("Terminal") {
+            Some("1") | Some("true") => true,
+            _ => false
+        };
         
         if let Some("1") | Some("true") = section.attr("NoDisplay") {
             return Err("NoDisplay is set");
@@ -61,22 +68,25 @@ impl ApplicationEntry {
         let icon = get_attr("Icon");
         Ok(ApplicationEntry {
             name: name.to_string(),
+            generic_name: generic_name.map(Into::into),
             comment: comment.map(Into::into),
             exec: exec.to_string(),
+            terminal: terminal,
             icon: icon.map(Into::into)
         })
     }
 
     const LOCATIONS: &'static[&'static str] = &["/usr/share/applications/", "/usr/local/share/applications/", "~/.local/share/applications/"];
 
-    fn parse_all(locales: &Vec<String>) -> Vec<ApplicationEntry> {
+    fn parse_all(locale : &Locale) -> Vec<ApplicationEntry> {
+        let locales = get_locale_strings(locale);
         let mut app_entries = HashMap::new();
         for loc in Self::LOCATIONS {
             if let Ok(dir) = fs::read_dir(loc) {
                 for entry in dir {
                     if let Ok(e) = entry {
                         if e.path().is_file() {
-                            if let Ok(ae) = Self::parse(e.path(), locales) {
+                            if let Ok(ae) = Self::parse(e.path(), &locales) {
                                 app_entries.insert(e.file_name(), ae);
                             }
                         }
@@ -88,36 +98,35 @@ impl ApplicationEntry {
     }
 }
 
-fn string_compare(a: &str, b: &str) -> Ordering {
+fn string_collate(a: &str, b: &str) -> Ordering {
     // Note: Only works properly if locale is set to UTF-8
     let ord = unsafe {
-        let ac = CString::new(a).unwrap();
-        let bc = CString::new(b).unwrap();
-        strcoll(ac.as_ptr(), bc.as_ptr())
+        let c_a = CString::new(a).unwrap();
+        let c_b = CString::new(b).unwrap();
+        strcoll(c_a.as_ptr(), c_b.as_ptr())
     };
     ord.cmp(&0)
 }
 
-fn set_locale(cat: i32, loc: &str) -> Option<String> {
-    unsafe {
-        let loc = CString::new(loc).unwrap();
-        let c_str = setlocale(cat, loc.as_ptr());
-        if c_str.is_null() {
-            None
-        } else {
-            Some(CStr::from_ptr(c_str).to_string_lossy().to_string())
-        }
+unsafe fn setlocale_wrapper(category: i32, locale: *const c_char) -> Option<String> {
+    let ret = setlocale(category, locale);
+    if ret.is_null() {
+        None
+    } else {
+        Some(CStr::from_ptr(ret).to_str().unwrap().to_owned())
     }
 }
 
-fn get_locale(cat: i32) -> Option<String> {
+fn set_locale(category: i32, locale: &str) -> Option<String> {
     unsafe {
-        let c_str = setlocale(cat, ptr::null());
-        if c_str.is_null() {
-            None
-        } else {
-            Some(CStr::from_ptr(c_str).to_string_lossy().to_string())
-        }
+        let c_locale = CString::new(locale).unwrap();
+        setlocale_wrapper(category, c_locale.as_ptr())
+    }
+}
+
+fn get_locale(category: i32) -> Option<String> {
+    unsafe {
+        setlocale_wrapper(category, ptr::null())
     }
 }
 
@@ -140,9 +149,16 @@ fn get_locale_strings(locale: &Locale) -> Vec<String> {
 }
 
 fn main() -> Result<(), &'static str> {
-    println!("{:?}", set_locale(LC_COLLATE, ""));
-    println!("{:?}", set_locale(LC_MESSAGES, ""));
-    let loc = Locale::from_str(&get_locale(LC_MESSAGES).unwrap()).unwrap();
+    set_locale(LC_MESSAGES, "");
+    set_locale(LC_COLLATE, "");
+
+    let locale = Locale::from_str(&get_locale(LC_MESSAGES).unwrap()).unwrap();
+    let mut entries = ApplicationEntry::parse_all(&locale);
+    entries.sort_by(|a, b| string_collate(&a.name, &b.name));
+
+    for e in entries {
+        println!("{:?}", e);
+    }
 
     // println!("{:?}", get_locale(&Category::StringCollation));
     // set_locale_from_env(&Category::StringCollation);
@@ -161,15 +177,15 @@ fn main() -> Result<(), &'static str> {
     // println!("{:?}", find_executable_in_path("ls"));
     // println!("{:?}", find_executable_in_path("/asdf/ls"));
 
-    let mut arr = vec!["ä".to_string(), "O".to_string(), "z".to_string(), "a".to_string(), "A".to_string(), "ö".to_string(), "Z".to_string(), "G".to_string(), "g".to_string(), "0".to_string()];
-    arr.sort();
-    println!("{:?}", arr);
+    // let mut arr = vec!["ä".to_string(), "O".to_string(), "z".to_string(), "a".to_string(), "A".to_string(), "ö".to_string(), "Z".to_string(), "G".to_string(), "g".to_string(), "0".to_string()];
+    // arr.sort();
+    // println!("{:?}", arr);
 
-    arr.sort_by(|a,b| string_compare(a, b));
-    println!("{:?}", arr);
+    // arr.sort_by(|a,b| string_compare(a, b));
+    // println!("{:?}", arr);
 
-    arr.sort_by(|a,b| string_compare(a, b));
-    println!("{:?}", arr);
+    // arr.sort_by(|a,b| string_compare(a, b));
+    // println!("{:?}", arr);
 
     // set_locale(&Locale::from_str("en_US.UTF-8").unwrap(), &Category::StringCollation);
     // arr.sort_by(|a,b| string_compare(a, b));
