@@ -1,0 +1,1203 @@
+{
+  "id": 1,
+  "name": "root",
+  "rect": {
+    "x": 0,
+    "y": 0,
+    "width": 3840,
+    "height": 3240
+  },
+  "focused": false,
+  "focus": [
+    3,
+    5
+  ],
+  "border": "none",
+  "current_border_width": 0,
+  "layout": "splith",
+  "orientation": "horizontal",
+  "percent": null,
+  "window_rect": {
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0
+  },
+  "deco_rect": {
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0
+  },
+  "geometry": {
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0
+  },
+  "window": null,
+  "urgent": false,
+  "marks": [
+  ],
+  "fullscreen_mode": 0,
+  "nodes": [
+    {
+      "id": 2147483647,
+      "name": "__i3",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 3840,
+        "height": 3240
+      },
+      "focused": false,
+      "focus": [
+        2147483646
+      ],
+      "border": "none",
+      "current_border_width": 0,
+      "layout": "output",
+      "orientation": "horizontal",
+      "percent": null,
+      "window_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "deco_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "window": null,
+      "urgent": false,
+      "marks": [
+      ],
+      "fullscreen_mode": 0,
+      "nodes": [
+        {
+          "id": 2147483646,
+          "name": "__i3_scratch",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 3840,
+            "height": 3240
+          },
+          "focused": false,
+          "focus": [
+          ],
+          "border": "none",
+          "current_border_width": 0,
+          "layout": "splith",
+          "orientation": "horizontal",
+          "percent": null,
+          "window_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "deco_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "window": null,
+          "urgent": false,
+          "marks": [
+          ],
+          "fullscreen_mode": 1,
+          "nodes": [
+          ],
+          "floating_nodes": [
+          ],
+          "sticky": false,
+          "type": "workspace"
+        }
+      ],
+      "floating_nodes": [
+      ],
+      "sticky": false,
+      "type": "output"
+    },
+    {
+      "id": 3,
+      "name": "DP-2",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 3840,
+        "height": 2160
+      },
+      "focused": false,
+      "focus": [
+        4,
+        37
+      ],
+      "border": "none",
+      "current_border_width": 0,
+      "layout": "output",
+      "orientation": "none",
+      "percent": 0.66666666666666663,
+      "window_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "deco_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "window": null,
+      "urgent": false,
+      "marks": [
+      ],
+      "fullscreen_mode": 0,
+      "nodes": [
+        {
+          "id": 4,
+          "name": "1",
+          "rect": {
+            "x": 0,
+            "y": 21,
+            "width": 3840,
+            "height": 2139
+          },
+          "focused": false,
+          "focus": [
+            199,
+            198
+          ],
+          "border": "none",
+          "current_border_width": 0,
+          "layout": "splith",
+          "orientation": "horizontal",
+          "percent": null,
+          "window_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "deco_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "window": null,
+          "urgent": false,
+          "marks": [
+          ],
+          "fullscreen_mode": 1,
+          "nodes": [
+            {
+              "id": 198,
+              "name": "gtk transparent background - Google Search - Chromium",
+              "rect": {
+                "x": 0,
+                "y": 38,
+                "width": 1920,
+                "height": 2122
+              },
+              "focused": false,
+              "focus": [
+              ],
+              "border": "normal",
+              "current_border_width": 2,
+              "layout": "none",
+              "orientation": "none",
+              "percent": 0.5,
+              "window_rect": {
+                "x": 2,
+                "y": 0,
+                "width": 1916,
+                "height": 2120
+              },
+              "deco_rect": {
+                "x": 0,
+                "y": 0,
+                "width": 1920,
+                "height": 17
+              },
+              "geometry": {
+                "x": 0,
+                "y": 0,
+                "width": 1912,
+                "height": 2120
+              },
+              "window": 12582913,
+              "urgent": false,
+              "marks": [
+              ],
+              "fullscreen_mode": 0,
+              "nodes": [
+              ],
+              "floating_nodes": [
+              ],
+              "sticky": false,
+              "type": "con",
+              "pid": 2189646,
+              "app_id": null,
+              "visible": true,
+              "max_render_time": 0,
+              "shell": "xwayland",
+              "inhibit_idle": false,
+              "idle_inhibitors": {
+                "user": "none",
+                "application": "none"
+              },
+              "window_properties": {
+                "class": "Chromium",
+                "instance": "chromium",
+                "title": "gtk transparent background - Google Search - Chromium",
+                "transient_for": null,
+                "window_role": "browser",
+                "window_type": "normal"
+              }
+            },
+            {
+              "id": 199,
+              "name": null,
+              "rect": {
+                "x": 1920,
+                "y": 21,
+                "width": 1920,
+                "height": 2139
+              },
+              "focused": false,
+              "focus": [
+                40
+              ],
+              "border": "none",
+              "current_border_width": 0,
+              "layout": "splitv",
+              "orientation": "vertical",
+              "percent": 0.5,
+              "window_rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "deco_rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "geometry": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "window": null,
+              "urgent": false,
+              "marks": [
+              ],
+              "fullscreen_mode": 0,
+              "nodes": [
+                {
+                  "id": 40,
+                  "name": null,
+                  "rect": {
+                    "x": 1920,
+                    "y": 21,
+                    "width": 1920,
+                    "height": 2139
+                  },
+                  "focused": false,
+                  "focus": [
+                    10
+                  ],
+                  "border": "none",
+                  "current_border_width": 0,
+                  "layout": "splith",
+                  "orientation": "horizontal",
+                  "percent": 1.0,
+                  "window_rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0
+                  },
+                  "deco_rect": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0
+                  },
+                  "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0
+                  },
+                  "window": null,
+                  "urgent": false,
+                  "marks": [
+                  ],
+                  "fullscreen_mode": 0,
+                  "nodes": [
+                    {
+                      "id": 10,
+                      "name": null,
+                      "rect": {
+                        "x": 1920,
+                        "y": 21,
+                        "width": 1920,
+                        "height": 2139
+                      },
+                      "focused": false,
+                      "focus": [
+                        197,
+                        187
+                      ],
+                      "border": "none",
+                      "current_border_width": 0,
+                      "layout": "tabbed",
+                      "orientation": "none",
+                      "percent": 1.0,
+                      "window_rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0
+                      },
+                      "deco_rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0
+                      },
+                      "geometry": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0
+                      },
+                      "window": null,
+                      "urgent": false,
+                      "marks": [
+                      ],
+                      "fullscreen_mode": 0,
+                      "nodes": [
+                        {
+                          "id": 187,
+                          "name": "cpptest – main.cpp",
+                          "rect": {
+                            "x": 1920,
+                            "y": 38,
+                            "width": 1920,
+                            "height": 2122
+                          },
+                          "focused": false,
+                          "focus": [
+                          ],
+                          "border": "normal",
+                          "current_border_width": 2,
+                          "layout": "none",
+                          "orientation": "none",
+                          "percent": 1.0,
+                          "window_rect": {
+                            "x": 2,
+                            "y": 0,
+                            "width": 1916,
+                            "height": 2120
+                          },
+                          "deco_rect": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 960,
+                            "height": 17
+                          },
+                          "geometry": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 1868,
+                            "height": 1020
+                          },
+                          "window": 20971597,
+                          "urgent": false,
+                          "marks": [
+                          ],
+                          "fullscreen_mode": 0,
+                          "nodes": [
+                          ],
+                          "floating_nodes": [
+                          ],
+                          "sticky": false,
+                          "type": "con",
+                          "pid": 1830377,
+                          "app_id": null,
+                          "visible": false,
+                          "max_render_time": 0,
+                          "shell": "xwayland",
+                          "inhibit_idle": false,
+                          "idle_inhibitors": {
+                            "user": "none",
+                            "application": "none"
+                          },
+                          "window_properties": {
+                            "class": "jetbrains-clion",
+                            "instance": "jetbrains-clion",
+                            "title": "cpptest – main.cpp",
+                            "transient_for": null,
+                            "window_type": "normal"
+                          }
+                        },
+                        {
+                          "id": 197,
+                          "name": "main.rs - launcher - Code - OSS",
+                          "rect": {
+                            "x": 1920,
+                            "y": 38,
+                            "width": 1920,
+                            "height": 2122
+                          },
+                          "focused": false,
+                          "focus": [
+                          ],
+                          "border": "normal",
+                          "current_border_width": 2,
+                          "layout": "none",
+                          "orientation": "none",
+                          "percent": 1.0,
+                          "window_rect": {
+                            "x": 2,
+                            "y": 0,
+                            "width": 1916,
+                            "height": 2120
+                          },
+                          "deco_rect": {
+                            "x": 960,
+                            "y": 0,
+                            "width": 960,
+                            "height": 17
+                          },
+                          "geometry": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 1024,
+                            "height": 768
+                          },
+                          "window": 6291457,
+                          "urgent": false,
+                          "marks": [
+                          ],
+                          "fullscreen_mode": 0,
+                          "nodes": [
+                          ],
+                          "floating_nodes": [
+                          ],
+                          "sticky": false,
+                          "type": "con",
+                          "pid": 2189301,
+                          "app_id": null,
+                          "visible": true,
+                          "max_render_time": 0,
+                          "shell": "xwayland",
+                          "inhibit_idle": false,
+                          "idle_inhibitors": {
+                            "user": "none",
+                            "application": "none"
+                          },
+                          "window_properties": {
+                            "class": "code-oss",
+                            "instance": "code-oss",
+                            "title": "main.rs - launcher - Code - OSS",
+                            "transient_for": null,
+                            "window_role": "browser-window",
+                            "window_type": "normal"
+                          }
+                        }
+                      ],
+                      "floating_nodes": [
+                      ],
+                      "sticky": false,
+                      "type": "con"
+                    }
+                  ],
+                  "floating_nodes": [
+                  ],
+                  "sticky": false,
+                  "type": "con"
+                }
+              ],
+              "floating_nodes": [
+              ],
+              "sticky": false,
+              "type": "con"
+            }
+          ],
+          "floating_nodes": [
+          ],
+          "sticky": false,
+          "num": 1,
+          "output": "DP-2",
+          "type": "workspace",
+          "representation": "H[Chromium V[H[T[jetbrains-clion code-oss]]]]"
+        },
+        {
+          "id": 37,
+          "name": "3",
+          "rect": {
+            "x": 0,
+            "y": 21,
+            "width": 3840,
+            "height": 2139
+          },
+          "focused": false,
+          "focus": [
+            38
+          ],
+          "border": "none",
+          "current_border_width": 0,
+          "layout": "splith",
+          "orientation": "horizontal",
+          "percent": null,
+          "window_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "deco_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "window": null,
+          "urgent": false,
+          "marks": [
+          ],
+          "fullscreen_mode": 1,
+          "nodes": [
+            {
+              "id": 38,
+              "name": "pwd.kdbx [Locked] - KeePassXC",
+              "rect": {
+                "x": 0,
+                "y": 38,
+                "width": 3840,
+                "height": 2122
+              },
+              "focused": false,
+              "focus": [
+              ],
+              "border": "normal",
+              "current_border_width": 2,
+              "layout": "none",
+              "orientation": "none",
+              "percent": 1.0,
+              "window_rect": {
+                "x": 2,
+                "y": 0,
+                "width": 3836,
+                "height": 2120
+              },
+              "deco_rect": {
+                "x": 0,
+                "y": 0,
+                "width": 3840,
+                "height": 17
+              },
+              "geometry": {
+                "x": 0,
+                "y": 0,
+                "width": 3840,
+                "height": 2106
+              },
+              "window": null,
+              "urgent": false,
+              "marks": [
+              ],
+              "fullscreen_mode": 0,
+              "nodes": [
+              ],
+              "floating_nodes": [
+              ],
+              "sticky": false,
+              "type": "con",
+              "pid": 113087,
+              "app_id": "org.keepassxc.KeePassXC",
+              "visible": false,
+              "max_render_time": 0,
+              "shell": "xdg_shell",
+              "inhibit_idle": false,
+              "idle_inhibitors": {
+                "user": "none",
+                "application": "none"
+              }
+            }
+          ],
+          "floating_nodes": [
+          ],
+          "sticky": false,
+          "num": 3,
+          "output": "DP-2",
+          "type": "workspace",
+          "representation": "H[org.keepassxc.KeePassXC]"
+        }
+      ],
+      "floating_nodes": [
+      ],
+      "sticky": false,
+      "type": "output",
+      "active": true,
+      "dpms": true,
+      "primary": false,
+      "make": "Philips Consumer Electronics Company",
+      "model": "PHL BDM4037U",
+      "serial": "0x00002578",
+      "scale": 1.0,
+      "scale_filter": "nearest",
+      "transform": "normal",
+      "adaptive_sync_status": "disabled",
+      "current_workspace": "1",
+      "modes": [
+        {
+          "width": 720,
+          "height": 400,
+          "refresh": 70082
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 59940
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 59940
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 60000
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 66667
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 72809
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 75000
+        },
+        {
+          "width": 720,
+          "height": 480,
+          "refresh": 59940
+        },
+        {
+          "width": 720,
+          "height": 480,
+          "refresh": 59940
+        },
+        {
+          "width": 720,
+          "height": 480,
+          "refresh": 59940
+        },
+        {
+          "width": 720,
+          "height": 480,
+          "refresh": 60000
+        },
+        {
+          "width": 720,
+          "height": 480,
+          "refresh": 60000
+        },
+        {
+          "width": 720,
+          "height": 576,
+          "refresh": 50000
+        },
+        {
+          "width": 720,
+          "height": 576,
+          "refresh": 50000
+        },
+        {
+          "width": 720,
+          "height": 576,
+          "refresh": 50000
+        },
+        {
+          "width": 800,
+          "height": 600,
+          "refresh": 56250
+        },
+        {
+          "width": 800,
+          "height": 600,
+          "refresh": 60317
+        },
+        {
+          "width": 800,
+          "height": 600,
+          "refresh": 72188
+        },
+        {
+          "width": 800,
+          "height": 600,
+          "refresh": 75000
+        },
+        {
+          "width": 832,
+          "height": 624,
+          "refresh": 74551
+        },
+        {
+          "width": 1024,
+          "height": 768,
+          "refresh": 60004
+        },
+        {
+          "width": 1024,
+          "height": 768,
+          "refresh": 70069
+        },
+        {
+          "width": 1024,
+          "height": 768,
+          "refresh": 75029
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "refresh": 50000
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "refresh": 59940
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "refresh": 60000
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "refresh": 60000
+        },
+        {
+          "width": 1280,
+          "height": 800,
+          "refresh": 59997
+        },
+        {
+          "width": 1280,
+          "height": 960,
+          "refresh": 60000
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "refresh": 59887
+        },
+        {
+          "width": 1280,
+          "height": 1024,
+          "refresh": 60020
+        },
+        {
+          "width": 1280,
+          "height": 1024,
+          "refresh": 75025
+        },
+        {
+          "width": 1680,
+          "height": 1050,
+          "refresh": 59954
+        },
+        {
+          "width": 1600,
+          "height": 1200,
+          "refresh": 59997
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "refresh": 50000
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "refresh": 59940
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "refresh": 60000
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "refresh": 60000
+        },
+        {
+          "width": 1920,
+          "height": 1200,
+          "refresh": 59997
+        },
+        {
+          "width": 1920,
+          "height": 2160,
+          "refresh": 59988
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 23976
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 24000
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 25000
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 29981
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 29970
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 30000
+        },
+        {
+          "width": 3840,
+          "height": 2160,
+          "refresh": 59997
+        }
+      ],
+      "current_mode": {
+        "width": 3840,
+        "height": 2160,
+        "refresh": 59997
+      },
+      "max_render_time": 0
+    },
+    {
+      "id": 5,
+      "name": "HDMI-A-1",
+      "rect": {
+        "x": 960,
+        "y": 2160,
+        "width": 1920,
+        "height": 1080
+      },
+      "focused": false,
+      "focus": [
+        6
+      ],
+      "border": "none",
+      "current_border_width": 0,
+      "layout": "output",
+      "orientation": "none",
+      "percent": 0.16666666666666666,
+      "window_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "deco_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "window": null,
+      "urgent": false,
+      "marks": [
+      ],
+      "fullscreen_mode": 0,
+      "nodes": [
+        {
+          "id": 6,
+          "name": "2",
+          "rect": {
+            "x": 960,
+            "y": 2181,
+            "width": 1920,
+            "height": 1059
+          },
+          "focused": false,
+          "focus": [
+            192
+          ],
+          "border": "none",
+          "current_border_width": 0,
+          "layout": "splith",
+          "orientation": "horizontal",
+          "percent": null,
+          "window_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "deco_rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "window": null,
+          "urgent": false,
+          "marks": [
+          ],
+          "fullscreen_mode": 1,
+          "nodes": [
+            {
+              "id": 192,
+              "name": "#general - Discord",
+              "rect": {
+                "x": 960,
+                "y": 2198,
+                "width": 1920,
+                "height": 1042
+              },
+              "focused": false,
+              "focus": [
+              ],
+              "border": "normal",
+              "current_border_width": 2,
+              "layout": "none",
+              "orientation": "none",
+              "percent": 1.0,
+              "window_rect": {
+                "x": 2,
+                "y": 0,
+                "width": 1916,
+                "height": 1040
+              },
+              "deco_rect": {
+                "x": 0,
+                "y": 0,
+                "width": 1920,
+                "height": 17
+              },
+              "geometry": {
+                "x": 0,
+                "y": 0,
+                "width": 1946,
+                "height": 688
+              },
+              "window": 41943048,
+              "urgent": false,
+              "marks": [
+              ],
+              "fullscreen_mode": 0,
+              "nodes": [
+              ],
+              "floating_nodes": [
+              ],
+              "sticky": false,
+              "type": "con",
+              "pid": 2074698,
+              "app_id": null,
+              "visible": true,
+              "max_render_time": 0,
+              "shell": "xwayland",
+              "inhibit_idle": false,
+              "idle_inhibitors": {
+                "user": "none",
+                "application": "none"
+              },
+              "window_properties": {
+                "class": "discord",
+                "instance": "discord",
+                "title": "#general - Discord",
+                "transient_for": null,
+                "window_type": "normal"
+              }
+            }
+          ],
+          "floating_nodes": [
+          ],
+          "sticky": false,
+          "num": 2,
+          "output": "HDMI-A-1",
+          "type": "workspace",
+          "representation": "H[discord]"
+        }
+      ],
+      "floating_nodes": [
+      ],
+      "sticky": false,
+      "type": "output",
+      "active": true,
+      "dpms": true,
+      "primary": false,
+      "make": "Unknown",
+      "model": "GT-133",
+      "serial": "",
+      "scale": 1.0,
+      "scale_filter": "nearest",
+      "transform": "normal",
+      "adaptive_sync_status": "disabled",
+      "current_workspace": "2",
+      "modes": [
+        {
+          "width": 720,
+          "height": 400,
+          "refresh": 70082
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 59940
+        },
+        {
+          "width": 640,
+          "height": 480,
+          "refresh": 75000
+        },
+        {
+          "width": 800,
+          "height": 600,
+          "refresh": 60317
+        },
+        {
+          "width": 800,
+          "height": 600,
+          "refresh": 75000
+        },
+        {
+          "width": 1024,
+          "height": 768,
+          "refresh": 60004
+        },
+        {
+          "width": 1024,
+          "height": 768,
+          "refresh": 75029
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "refresh": 60000
+        },
+        {
+          "width": 1280,
+          "height": 800,
+          "refresh": 60000
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "refresh": 60000
+        },
+        {
+          "width": 1280,
+          "height": 1024,
+          "refresh": 60020
+        },
+        {
+          "width": 1280,
+          "height": 1024,
+          "refresh": 75025
+        },
+        {
+          "width": 1680,
+          "height": 1050,
+          "refresh": 60000
+        },
+        {
+          "width": 1600,
+          "height": 1200,
+          "refresh": 60000
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "refresh": 60000
+        }
+      ],
+      "current_mode": {
+        "width": 1920,
+        "height": 1080,
+        "refresh": 60000
+      },
+      "max_render_time": 0
+    }
+  ],
+  "floating_nodes": [
+  ],
+  "sticky": false,
+  "type": "root"
+}
