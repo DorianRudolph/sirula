@@ -4,6 +4,7 @@ use std::{
     collections::HashMap, fs, fs::metadata, os::unix::fs::PermissionsExt, path::Path,
     result::Result, vec::Vec,
 };
+use shellexpand;
 
 #[derive(Debug)]
 pub struct ApplicationEntry {
@@ -87,7 +88,8 @@ impl ApplicationEntry {
     pub fn parse_all(locale_strings: &Vec<String>) -> Vec<ApplicationEntry> {
         let mut app_entries = HashMap::new();
         for loc in Self::LOCATIONS {
-            if let Ok(dir) = fs::read_dir(loc) {
+            let loc_expanded = shellexpand::tilde(loc).to_string();
+            if let Ok(dir) = fs::read_dir(loc_expanded) {
                 for entry in dir {
                     if let Ok(e) = entry {
                         if e.path().is_file() {
