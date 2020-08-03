@@ -19,6 +19,12 @@ use gio::{Icon, AppInfo};
 
 use gdk_pixbuf::Pixbuf;
 
+use std::io::Write;
+use log::LevelFilter;
+
+
+#[macro_use] extern crate log;
+
 struct AppEntry {
     name: String,
     info: AppInfo,
@@ -29,12 +35,16 @@ struct AppEntry {
 }
 
 fn load_entries() -> Vec<AppEntry> {
+    debug!("begin load_entries");
     let mut entries = Vec::new();
 
     let icon_theme = IconTheme::get_default().unwrap();
     let icon_size = 32;
 
     let apps = gio::AppInfo::get_all();
+
+    debug!("got all");
+
     for app in apps {
         if !app.should_show() || app.get_display_name().is_none() {
             continue
@@ -71,6 +81,8 @@ fn load_entries() -> Vec<AppEntry> {
 
     entries.sort_by(|a, b| string_collate(&a.name, &b.name));
     // apps.sort_by(|a, b| string_collate(a.get_display_name().unwrap()))
+
+    debug!("built");
 
     entries
 }
@@ -114,56 +126,11 @@ fn activate(application: &gtk::Application) {
     scroll.add(&listbox);
 
     let entries = load_entries();
+
     for entry in entries {
         listbox.add(&entry.hbox);
     }
 
-    // let mut apps = gio::AppInfo::get_all();
-    // apps.retain(|app| app.get_display_name().is_some());
-    // // apps.sort_by(|a, b| string_collate(a.get_display_name().unwrap()))
-
-    // for app in apps {
-    //     if !app.should_show() {
-    //         continue;
-    //     }
-    //     println!("{:?} {:?}", app.get_display_name(), app.get_description());
-    //
-    //     let name = app.get_display_name().unwrap().to_string();
-    //     let label = gtk::LabelBuilder::new().xalign(0.0f32).label(&name).build();
-    //     label.set_line_wrap(true);
-    //     label.set_lines(2);
-    //     label.set_ellipsize(EllipsizeMode::End);
-    //
-    //     // let icon_size = 32;
-    //     // let pixbuf = match e.icon.to_owned() {
-    //     //     Some(ico) if Path::new(&ico).is_absolute() => Pixbuf::from_file_at_scale(ico, icon_size, icon_size, true).ok(),
-    //     //     Some(ico) => match icon_theme.load_icon("asdf", icon_size, IconLookupFlags::FORCE_SIZE) { Ok(pixbuf) => pixbuf, _ => None }
-    //     //     _ => None,
-    //     // };
-    //     // let icon = match pixbuf {
-    //     //     Some(pixbuf) => ImageBuilder::new().pixbuf(&pixbuf).build(),
-    //     //     _ => ImageBuilder::new().pixel_size(icon_size).icon_name(&e.icon.unwrap_or("".to_string())).build()
-    //     // };
-    //
-    //     // let a = match e.icon {
-    //     //     Some(path) if Path::new(&path).is_absolute() => {
-    //     //
-    //     //     },
-    //     //     _ => 2
-    //     // };
-    //     // let icon = gtk::ImageBuilder::new().pixel_size(32).build();
-    //     // // icon.set_from_icon_name(e.icon.as_ref().map(String::as_str), gtk::IconSize::Dnd);
-    //     // if let Some(ico) = e.icon {
-    //     //     icon.set_from_file(ico);
-    //     //     icon.set_pixel_size(32);
-    //     // }
-    //
-    //     let hbox = gtk::BoxBuilder::new().orientation(gtk::Orientation::Horizontal).build();
-    //     // hbox.pack_start(&icon, false, false, 0);
-    //     hbox.pack_end(&label, true, true, 0);
-    //
-    //     listbox.add(&hbox);
-    // }
 
     let entry2 = entry.clone();
     window.connect_key_press_event(move |w, e| {
@@ -205,6 +172,17 @@ fn activate(application: &gtk::Application) {
 }
 
 fn main() {
+    let mut builder = env_logger::Builder::from_default_env();
+
+    builder.format(|buf, record| writeln!(buf, "{} | {} | {}", buf.timestamp_millis(), record.level(), record.args()))
+           .filter(None, LevelFilter::Debug)
+           .init();
+
+    env_logger::Builder::new().format(|buf, record| {
+        let ts = buf.timestamp();
+        writeln!(buf, "{}: {}: {}", ts, record.level(), record.args())
+    }).build();
+
     set_locale(LC_ALL, "");
 
     let application =
