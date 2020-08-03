@@ -9,15 +9,71 @@ use app_entry::*;
 
 use gio::prelude::*;
 use gtk::prelude::*;
-use gtk::{LabelExt, IconLookupFlags, ImageBuilder};
+use gtk::{LabelExt, IconLookupFlags, ImageBuilder, Label, Image, Widget, BoxBuilder, Orientation, IconTheme, IconThemeExt};
 use gdk::keys::constants;
 use pango::EllipsizeMode;
 
 use std::env::args;
 use std::borrow::Borrow;
-use gio::Icon;
+use gio::{Icon, AppInfo};
 
 use gdk_pixbuf::Pixbuf;
+
+struct AppEntry {
+    name: String,
+    info: AppInfo,
+    label: Label,
+    image: Image,
+    hbox: gtk::Box,
+    score: i32,
+}
+
+fn load_entries() -> Vec<AppEntry> {
+    let mut entries = Vec::new();
+
+    let icon_theme = IconTheme::get_default().unwrap();
+    let icon_size = 32;
+
+    let apps = gio::AppInfo::get_all();
+    for app in apps {
+        if !app.should_show() || app.get_display_name().is_none() {
+            continue
+        }
+        let name = app.get_display_name().unwrap().to_string();
+
+        let label = gtk::LabelBuilder::new().xalign(0.0f32).label(&name).build();
+        // label.set_line_wrap(true);
+        // label.set_lines(2);
+        label.set_ellipsize(EllipsizeMode::End);
+
+        let icon = app.get_icon()
+            .map(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE)).flatten()
+            .map(|icon| icon.load_icon().ok()).flatten();
+
+        let image = match icon {
+            Some(icon) => ImageBuilder::new().pixbuf(&icon),
+            _ => ImageBuilder::new().pixel_size(icon_size),
+        }.build();
+
+        let hbox = BoxBuilder::new().orientation(Orientation::Horizontal).build();
+        hbox.pack_start(&image, false, false, 0);
+        hbox.pack_end(&label, true, true, 0);
+
+        entries.push(AppEntry {
+            name,
+            info: app,
+            label,
+            image,
+            hbox: hbox,
+            score: 100
+        });
+    }
+
+    entries.sort_by(|a, b| string_collate(&a.name, &b.name));
+    // apps.sort_by(|a, b| string_collate(a.get_display_name().unwrap()))
+
+    entries
+}
 
 fn activate(application: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(application);
@@ -56,48 +112,58 @@ fn activate(application: &gtk::Application) {
 
     let listbox = gtk::ListBoxBuilder::new().name("listbox").build();
     scroll.add(&listbox);
-    let entries = get_entries();
 
-    let icon_theme = gtk::IconTheme::get_default().unwrap();
-
-    for e in entries {
-        println!("{} {:?}", e.name, e.icon);
-
-        let label = gtk::LabelBuilder::new().xalign(0.0f32).label(&e.name).build();
-        label.set_line_wrap(true);
-        label.set_lines(2);
-        label.set_ellipsize(EllipsizeMode::End);
-
-        let icon_size = 32;
-        let pixbuf = match e.icon.to_owned() {
-            Some(ico) if Path::new(&ico).is_absolute() => Pixbuf::from_file_at_scale(ico, icon_size, icon_size, true).ok(),
-            Some(ico) => match icon_theme.load_icon("asdf", icon_size, IconLookupFlags::FORCE_SIZE) { Ok(pixbuf) => pixbuf, _ => None }
-            _ => None,
-        };
-        let icon = match pixbuf {
-            Some(pixbuf) => ImageBuilder::new().pixbuf(&pixbuf).build(),
-            _ => ImageBuilder::new().pixel_size(icon_size).icon_name(&e.icon.unwrap_or("".to_string())).build()
-        };
-
-        // let a = match e.icon {
-        //     Some(path) if Path::new(&path).is_absolute() => {
-        //
-        //     },
-        //     _ => 2
-        // };
-        // let icon = gtk::ImageBuilder::new().pixel_size(32).build();
-        // // icon.set_from_icon_name(e.icon.as_ref().map(String::as_str), gtk::IconSize::Dnd);
-        // if let Some(ico) = e.icon {
-        //     icon.set_from_file(ico);
-        //     icon.set_pixel_size(32);
-        // }
-
-        let hbox = gtk::BoxBuilder::new().orientation(gtk::Orientation::Horizontal).build();
-        hbox.pack_start(&icon, false, false, 0);
-        hbox.pack_end(&label, true, true, 0);
-
-        listbox.add(&hbox);
+    let entries = load_entries();
+    for entry in entries {
+        listbox.add(&entry.hbox);
     }
+
+    // let mut apps = gio::AppInfo::get_all();
+    // apps.retain(|app| app.get_display_name().is_some());
+    // // apps.sort_by(|a, b| string_collate(a.get_display_name().unwrap()))
+
+    // for app in apps {
+    //     if !app.should_show() {
+    //         continue;
+    //     }
+    //     println!("{:?} {:?}", app.get_display_name(), app.get_description());
+    //
+    //     let name = app.get_display_name().unwrap().to_string();
+    //     let label = gtk::LabelBuilder::new().xalign(0.0f32).label(&name).build();
+    //     label.set_line_wrap(true);
+    //     label.set_lines(2);
+    //     label.set_ellipsize(EllipsizeMode::End);
+    //
+    //     // let icon_size = 32;
+    //     // let pixbuf = match e.icon.to_owned() {
+    //     //     Some(ico) if Path::new(&ico).is_absolute() => Pixbuf::from_file_at_scale(ico, icon_size, icon_size, true).ok(),
+    //     //     Some(ico) => match icon_theme.load_icon("asdf", icon_size, IconLookupFlags::FORCE_SIZE) { Ok(pixbuf) => pixbuf, _ => None }
+    //     //     _ => None,
+    //     // };
+    //     // let icon = match pixbuf {
+    //     //     Some(pixbuf) => ImageBuilder::new().pixbuf(&pixbuf).build(),
+    //     //     _ => ImageBuilder::new().pixel_size(icon_size).icon_name(&e.icon.unwrap_or("".to_string())).build()
+    //     // };
+    //
+    //     // let a = match e.icon {
+    //     //     Some(path) if Path::new(&path).is_absolute() => {
+    //     //
+    //     //     },
+    //     //     _ => 2
+    //     // };
+    //     // let icon = gtk::ImageBuilder::new().pixel_size(32).build();
+    //     // // icon.set_from_icon_name(e.icon.as_ref().map(String::as_str), gtk::IconSize::Dnd);
+    //     // if let Some(ico) = e.icon {
+    //     //     icon.set_from_file(ico);
+    //     //     icon.set_pixel_size(32);
+    //     // }
+    //
+    //     let hbox = gtk::BoxBuilder::new().orientation(gtk::Orientation::Horizontal).build();
+    //     // hbox.pack_start(&icon, false, false, 0);
+    //     hbox.pack_end(&label, true, true, 0);
+    //
+    //     listbox.add(&hbox);
+    // }
 
     let entry2 = entry.clone();
     window.connect_key_press_event(move |w, e| {
