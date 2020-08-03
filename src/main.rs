@@ -1,29 +1,32 @@
-use libc::{LC_COLLATE, LC_MESSAGES, LC_ALL};
-use std::str::FromStr;
+use libc::{LC_ALL, LC_COLLATE, LC_MESSAGES};
 use std::path::Path;
+use std::str::FromStr;
 
 mod locale;
 use locale::*;
-mod app_entry;
-use app_entry::*;
 
+use gdk::keys::constants;
 use gio::prelude::*;
 use gtk::prelude::*;
-use gtk::{LabelExt, IconLookupFlags, ImageBuilder, Label, Image, Widget, BoxBuilder, Orientation, IconTheme, IconThemeExt};
-use gdk::keys::constants;
+use gtk::{
+    BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, Image, ImageBuilder, Label, LabelExt,
+    Orientation, Widget,
+};
 use pango::EllipsizeMode;
 
-use std::env::args;
+use gio::{AppInfo, Icon};
 use std::borrow::Borrow;
-use gio::{Icon, AppInfo};
+use std::env::args;
 
 use gdk_pixbuf::Pixbuf;
 
-use std::io::Write;
 use log::LevelFilter;
+use std::io::Write;
 
+use futures::prelude::*;
 
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 struct AppEntry {
     name: String,
@@ -39,33 +42,42 @@ fn load_entries() -> Vec<AppEntry> {
     let mut entries = Vec::new();
 
     let icon_theme = IconTheme::get_default().unwrap();
-    let icon_size = 32;
+    let icon_size = 64;
 
     let apps = gio::AppInfo::get_all();
 
     debug!("got all");
 
+    let main_context = glib::MainContext::default();
+
     for app in apps {
         if !app.should_show() || app.get_display_name().is_none() {
-            continue
+            continue;
         }
         let name = app.get_display_name().unwrap().to_string();
 
         let label = gtk::LabelBuilder::new().xalign(0.0f32).label(&name).build();
-        // label.set_line_wrap(true);
-        // label.set_lines(2);
+        label.set_line_wrap(true);
+        label.set_lines(2);
         label.set_ellipsize(EllipsizeMode::End);
 
-        let icon = app.get_icon()
-            .map(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE)).flatten()
-            .map(|icon| icon.load_icon().ok()).flatten();
+        let image = ImageBuilder::new().pixel_size(icon_size).build();
+        if let Some(icon) = app
+            .get_icon()
+            .map(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE))
+            .flatten()
+        {
+            let image_clone = image.clone();
+            main_context.spawn_local(icon.load_icon_async_future().map(move |pb| {
+                if let Ok(pb) = pb {
+                    image_clone.set_from_pixbuf(Some(&pb));
+                }
+            }));
+        }
 
-        let image = match icon {
-            Some(icon) => ImageBuilder::new().pixbuf(&icon),
-            _ => ImageBuilder::new().pixel_size(icon_size),
-        }.build();
-
-        let hbox = BoxBuilder::new().orientation(Orientation::Horizontal).build();
+        let hbox = BoxBuilder::new()
+            .orientation(Orientation::Horizontal)
+            .build();
         hbox.pack_start(&image, false, false, 0);
         hbox.pack_end(&label, true, true, 0);
 
@@ -75,12 +87,11 @@ fn load_entries() -> Vec<AppEntry> {
             label,
             image,
             hbox: hbox,
-            score: 100
+            score: 100,
         });
     }
 
     entries.sort_by(|a, b| string_collate(&a.name, &b.name));
-    // apps.sort_by(|a, b| string_collate(a.get_display_name().unwrap()))
 
     debug!("built");
 
@@ -115,11 +126,20 @@ fn activate(application: &gtk::Application) {
     // let label = gtk::Label::new(Some(""));
     // label.set_markup("<span font_desc=\"20.0\">GTK Layer Shell example!</span>");
 
-    let vbox = gtk::BoxBuilder::new().name("rootbox").orientation(gtk::Orientation::Vertical).build();
-    let entry = gtk::EntryBuilder::new().name("search").width_request(300).build();
+    let vbox = gtk::BoxBuilder::new()
+        .name("rootbox")
+        .orientation(gtk::Orientation::Vertical)
+        .build();
+    let entry = gtk::EntryBuilder::new()
+        .name("search")
+        .width_request(200)
+        .build();
     vbox.pack_start(&entry, false, false, 0);
 
-    let scroll = gtk::ScrolledWindowBuilder::new().name("scroll").hscrollbar_policy(gtk::PolicyType::Never).build();
+    let scroll = gtk::ScrolledWindowBuilder::new()
+        .name("scroll")
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .build();
     vbox.pack_end(&scroll, true, true, 0);
 
     let listbox = gtk::ListBoxBuilder::new().name("listbox").build();
@@ -131,19 +151,18 @@ fn activate(application: &gtk::Application) {
         listbox.add(&entry.hbox);
     }
 
-
     let entry2 = entry.clone();
     window.connect_key_press_event(move |w, e| {
         if !entry2.has_focus() {
             entry2.grab_focus_without_selecting();
         }
-        match e.get_keyval() {
+        Inhibit(match e.get_keyval() {
             constants::Escape => {
                 w.close();
-                Inhibit(true)
-            },
-            _ => Inhibit(false),
-        }
+                true
+            }
+            _ => false,
+        })
     });
 
     // let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 10);
@@ -151,7 +170,7 @@ fn activate(application: &gtk::Application) {
     // entry.set_property_width_request(300);
 
     // hbox.pack_start(&entry, false, false, 0);
-    
+
     // let scroll = gtk::ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
     // scroll.set_property_vscrollbar_policy(gtk::PolicyType::Never);
     // let app_box = gtk::Box::new(gtk::Orientation::Horizontal, 10);
@@ -166,7 +185,6 @@ fn activate(application: &gtk::Application) {
 
     // hbox.pack_end(&scroll, true, true, 0);
 
-
     window.add(&vbox);
     window.show_all()
 }
@@ -174,14 +192,25 @@ fn activate(application: &gtk::Application) {
 fn main() {
     let mut builder = env_logger::Builder::from_default_env();
 
-    builder.format(|buf, record| writeln!(buf, "{} | {} | {}", buf.timestamp_millis(), record.level(), record.args()))
-           .filter(None, LevelFilter::Debug)
-           .init();
+    builder
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "{} | {} | {}",
+                buf.timestamp_millis(),
+                record.level(),
+                record.args()
+            )
+        })
+        .filter(None, LevelFilter::Debug)
+        .init();
 
-    env_logger::Builder::new().format(|buf, record| {
-        let ts = buf.timestamp();
-        writeln!(buf, "{}: {}: {}", ts, record.level(), record.args())
-    }).build();
+    env_logger::Builder::new()
+        .format(|buf, record| {
+            let ts = buf.timestamp();
+            writeln!(buf, "{}: {}: {}", ts, record.level(), record.args())
+        })
+        .build();
 
     set_locale(LC_ALL, "");
 
@@ -194,31 +223,4 @@ fn main() {
     });
 
     application.run(&args().collect::<Vec<_>>());
-}
-
-fn get_entries() -> Vec<ApplicationEntry> {
-    let locale = Locale::from_str(&get_locale(LC_MESSAGES).unwrap()).unwrap();
-    let locale_strings = get_locale_strings(&locale);
-
-    let mut entries = ApplicationEntry::parse_all(&locale_strings);
-    entries.sort_by(|a, b| string_collate(&a.name, &b.name));
-    entries
-}
-
-#[allow(dead_code)]
-fn old_main() -> Result<(), &'static str> {
-    set_locale(LC_MESSAGES, "");
-    set_locale(LC_COLLATE, "");
-
-    let locale = Locale::from_str(&get_locale(LC_MESSAGES).unwrap()).unwrap();
-    let locale_strings = get_locale_strings(&locale);
-
-    let mut entries = ApplicationEntry::parse_all(&locale_strings);
-    entries.sort_by(|a, b| string_collate(&a.name, &b.name));
-
-    for e in entries {
-        println!("{:?}", e);
-    }
-
-    Ok(())
 }

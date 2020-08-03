@@ -574,9 +574,11 @@ version = "0.1.0"
 dependencies = [
  "env_logger",
  "freedesktop_entry_parser",
+ "futures",
  "gdk",
  "gdk-pixbuf",
  "gio",
+ "glib",
  "gtk",
  "gtk-layer-shell",
  "libc",

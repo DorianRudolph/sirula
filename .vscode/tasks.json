@@ -12,6 +12,18 @@
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"label": "Cargo release run",
+			"type": "process",
+			"command": "cargo",
+			"args": [
+				"run",
+				"--release"
+			],
+			"problemMatcher": [
+				"$rustc"
+			]
 		}
 	]
 }
