@@ -294,6 +294,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuzzy-matcher"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cda28c4acb13182d935e0ab6bc12329d1d22134d69801d0836d1ae4b47054f2a"
+dependencies = [
+ "thread_local",
+]
+
+[[package]]
 name = "gdk"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -575,6 +584,7 @@ dependencies = [
  "env_logger",
  "freedesktop_entry_parser",
  "futures",
+ "fuzzy-matcher",
  "gdk",
  "gdk-pixbuf",
  "gio",

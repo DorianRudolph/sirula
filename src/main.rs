@@ -1,6 +1,4 @@
-use libc::{LC_ALL, LC_COLLATE, LC_MESSAGES};
-use std::path::Path;
-use std::str::FromStr;
+use libc::LC_ALL;
 
 mod locale;
 use locale::*;
@@ -9,31 +7,33 @@ use gdk::keys::constants;
 use gio::prelude::*;
 use gtk::prelude::*;
 use gtk::{
-    BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, Image, ImageBuilder, Label, LabelExt,
-    Orientation, Widget,
+    BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, Image, ImageBuilder,
+    Label, LabelExt, ListBoxRow, Orientation,
 };
 use pango::EllipsizeMode;
 
-use gio::{AppInfo, Icon};
-use std::borrow::Borrow;
+use gio::{AppInfo};
 use std::env::args;
+use glib::variant::ToVariant;
 
-use gdk_pixbuf::Pixbuf;
 
 use log::LevelFilter;
 use std::io::Write;
 
 use futures::prelude::*;
 
-#[macro_use]
-extern crate log;
+use log::debug;
+
+use glib::prelude::*;
+use glib::clone;
+use glib::Variant;
 
 struct AppEntry {
     name: String,
     info: AppInfo,
     label: Label,
     image: Image,
-    hbox: gtk::Box,
+    row: ListBoxRow,
     score: i32,
 }
 
@@ -67,12 +67,11 @@ fn load_entries() -> Vec<AppEntry> {
             .map(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE))
             .flatten()
         {
-            let image_clone = image.clone();
-            main_context.spawn_local(icon.load_icon_async_future().map(move |pb| {
+            main_context.spawn_local(icon.load_icon_async_future().map(clone!(@weak image => move |pb| {
                 if let Ok(pb) = pb {
-                    image_clone.set_from_pixbuf(Some(&pb));
+                    image.set_from_pixbuf(Some(&pb));
                 }
-            }));
+            })));
         }
 
         let hbox = BoxBuilder::new()
@@ -81,12 +80,15 @@ fn load_entries() -> Vec<AppEntry> {
         hbox.pack_start(&image, false, false, 0);
         hbox.pack_end(&label, true, true, 0);
 
+        let row = ListBoxRow::new();
+        row.add(&hbox);
+
         entries.push(AppEntry {
             name,
             info: app,
             label,
             image,
-            hbox: hbox,
+            row,
             score: 100,
         });
     }
@@ -132,7 +134,7 @@ fn activate(application: &gtk::Application) {
         .build();
     let entry = gtk::EntryBuilder::new()
         .name("search")
-        .width_request(200)
+        //.width_request(300)
         .build();
     vbox.pack_start(&entry, false, false, 0);
 
@@ -147,43 +149,53 @@ fn activate(application: &gtk::Application) {
 
     let entries = load_entries();
 
+    let mut i = 0;
     for entry in entries {
-        listbox.add(&entry.hbox);
+        // entry.row.set_action_target_value(Some(&i.to_variant()));
+        listbox.add(&entry.row);
+        i += 1;
     }
 
-    let entry2 = entry.clone();
-    window.connect_key_press_event(move |w, e| {
-        if !entry2.has_focus() {
-            entry2.grab_focus_without_selecting();
-        }
-        Inhibit(match e.get_keyval() {
-            constants::Escape => {
-                w.close();
+    // let move_entry = clone!(@weak listbox, @weak window => @default-panic, move |dir| {
+    //     listbox.grab_focus();
+    //     window.child_focus(dir);
+    //     true
+    // });
+
+    let entry_clone = entry.clone();
+    window.connect_key_press_event(  move |window, event| {
+        // println!("{:?} {:?}", event.get_keycode(), event.get_keyval().name());
+        use constants::*;
+        #[allow(non_upper_case_globals)]
+        Inhibit(match event.get_keyval() {
+            Escape => {
+                window.close();
                 true
             }
-            _ => false,
+            Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
+            | Alt_L | Alt_R | Return  => false,
+            _ => {
+                if !event.get_is_modifier() && !entry_clone.has_focus() {
+                    entry_clone.grab_focus_without_selecting();
+                }
+                false
+            }
         })
     });
 
-    // let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 10);
-    // let entry = gtk::SearchEntry::new();
-    // entry.set_property_width_request(300);
+    // entry.connect_changed(|e| {});
+    listbox.connect_row_activated(|_, r| {
+        println!("activate");
+        //println!("{:?}", r.get_action_target_value().unwrap().get::<i32>());
+    });
 
-    // hbox.pack_start(&entry, false, false, 0);
+    // listbox.set_filter_func(Some(Box::new(|r| {
+    //     r.get_index() > 10
+    // })));
 
-    // let scroll = gtk::ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
-    // scroll.set_property_vscrollbar_policy(gtk::PolicyType::Never);
-    // let app_box = gtk::Box::new(gtk::Orientation::Horizontal, 10);
-
-    // for i in 0..100 {
-    //     let icon = gtk::Image::new();
-    //     icon.set_from_icon_name(Some(if i % 2 == 0 {"ark"} else {"firefox"}), gtk::IconSize::Dialog);
-    //     app_box.pack_end(&icon, false, false, 0);
-    // }
-
-    // scroll.add(&app_box);
-
-    // hbox.pack_end(&scroll, true, true, 0);
+    // listbox.set_sort_func(Some(Box::new(|a, b| {
+    //     a.get_index() - b.get_index()
+    // })));
 
     window.add(&vbox);
     window.show_all()
