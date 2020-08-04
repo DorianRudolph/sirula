@@ -1,4 +1,3 @@
-use pango::Attribute;
 use super::consts::*;
 use std::path::PathBuf;
 use gtk::{CssProvider,CssProviderExt};
@@ -20,12 +19,6 @@ pub fn load_css() {
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );    
     }
-}
-
-pub fn parse_attributes(markup: &str) -> Vec<Attribute> {
-    let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0').expect("Failed to parse markup");
-    let mut iter = attributes.get_iterator().expect("Failed to parse markup");
-    iter.get_attrs()
 }
 
 #[macro_export]

@@ -1,13 +1,12 @@
-use pango::{Attribute, EllipsizeMode};
+use pango::{Attribute, EllipsizeMode, AttrList};
 use std::collections::HashMap;
 use gtk::{IconTheme, IconThemeExt, ListBoxRow, WidgetExt, Label, LabelExt, prelude::*, BoxBuilder, IconLookupFlags, ImageBuilder,
     Orientation};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::{AppInfo, AppInfoExt};
-use super::consts::*;
 use glib::shell_unquote;
 use futures::prelude::*;
-use super::clone;
+use super::{clone, consts::*, Config};
 
 pub struct AppEntry {
     pub name: String,
@@ -18,46 +17,45 @@ pub struct AppEntry {
 }
 
 impl AppEntry {
-    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, exe_attrs: &Vec<Attribute>, highlight_attrs: &Vec<Attribute>) {
+    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config) {
+        self.set_markup(config);
+
+        let attr_list = self.label.get_attributes().unwrap_or(AttrList::new());
         self.score = if pattern.is_empty() {
             self.label.set_attributes(None);
             100
         } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.name, pattern) {
-            let attr_list = pango::AttrList::new();
-
             for i in indices {
-                for attr in highlight_attrs {
-                    let mut attr = attr.clone();
-                    let i = i as u32;
-                    attr.set_start_index(i);
-                    attr.set_end_index(i+1);
-                    attr_list.insert(attr);    
-                }
+                add_attrs(&attr_list, &config.markup_highlight, i as u32,  i as u32 + 1);
             }
-
-            self.label.set_attributes(Some(&attr_list));        
             score
         } else {
             0
         };
-        self.set_exe_markup(exe_attrs);
+        self.label.set_attributes(Some(&attr_list));
     }
 
-    fn set_exe_markup(&self, exe_attrs: &Vec<Attribute>) {
+    fn set_markup(&self, config: &Config) {
+        let attr_list = AttrList::new();
+
+        add_attrs(&attr_list, &config.markup_default, 0, self.name.len() as u32);
         if let Some((lo, hi)) = self.exe_range {
-            let attr_list = self.label.get_attributes().unwrap_or(pango::AttrList::new());
-            for attr in exe_attrs {
-                let mut attr = attr.clone();
-                attr.set_start_index(lo);
-                attr.set_end_index(hi);
-                attr_list.insert(attr);    
-            }
-            self.label.set_attributes(Some(&attr_list));    
+            add_attrs(&attr_list, &config.markup_exe, lo, hi);   
         }
+        self.label.set_attributes(Some(&attr_list));
     }
 }
 
-pub fn load_entries(exe_attrs: &Vec<Attribute>) -> HashMap<ListBoxRow, AppEntry> {
+fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
+    for attr in attrs {
+        let mut attr = attr.clone();
+        attr.set_start_index(start);
+        attr.set_end_index(end);
+        list.insert(attr);
+    }
+}
+
+pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::get_default().unwrap();
     let icon_size = 64;
@@ -122,7 +120,7 @@ pub fn load_entries(exe_attrs: &Vec<Attribute>) -> HashMap<ListBoxRow, AppEntry>
             label,
             score: 100,
         };
-        app_entry.set_exe_markup(exe_attrs);
+        app_entry.set_markup(config);
         entries.insert(row,app_entry);
     }
     entries

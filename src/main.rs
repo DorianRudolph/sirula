@@ -61,8 +61,7 @@ fn activate(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let exe_attrs = parse_attributes(&config.markup_exe);
-    let entries = Rc::new(RefCell::new(load_entries(&exe_attrs)));
+    let entries = Rc::new(RefCell::new(load_entries(&config)));
 
     for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
         listbox.add(row);
@@ -87,7 +86,6 @@ fn activate(application: &gtk::Application) {
         })
     }));
 
-    let highlight_attrs = parse_attributes(&config.markup_highlight);
     let matcher = SkimMatcherV2::default();
     entry.connect_changed(clone!(entries, listbox => move |e| {
         let mut has_matches = false;
@@ -95,7 +93,7 @@ fn activate(application: &gtk::Application) {
         {
             let mut entries = entries.borrow_mut();
             for entry in entries.values_mut() {
-                entry.update_match(&text, &matcher, &exe_attrs, &highlight_attrs);
+                entry.update_match(&text, &matcher, &config);
                 if entry.score > 0 {
                     has_matches = true;
                 }
