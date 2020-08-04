@@ -4,8 +4,7 @@ use gio::prelude::*;
 use gtk::prelude::*;
 use gtk::{ListBoxRow, WidgetExt};
 use std::env::args;
-use log::LevelFilter;
-use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use fuzzy_matcher::skim::SkimMatcherV2;
 
 mod consts;
@@ -134,16 +133,6 @@ fn activate(application: &gtk::Application) {
 }
 
 fn main() {
-    let mut builder = env_logger::Builder::from_default_env();
-    builder
-        .format(|buf, record| {
-            writeln!(buf, "{} | {} | {}", buf.timestamp_millis(),
-                record.level(), record.args()
-            )
-        })
-        .filter(None, LevelFilter::Debug)
-        .init();
-
     set_locale(LC_ALL, "");
 
     let application =
