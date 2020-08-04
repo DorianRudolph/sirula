@@ -66,14 +66,18 @@ fn activate(application: &gtk::Application) {
         listbox.add(row);
     }
 
-    window.connect_key_press_event(clone!(entry => move |window, event| {
+    window.connect_key_press_event(clone!(entry, listbox => move |window, event| {
         use constants::*;
         #[allow(non_upper_case_globals)]
         Inhibit(match event.get_keyval() {
             Escape => {
                 window.close();
                 true
-            }
+            },
+            Down | Tab if entry.has_focus() => {
+                listbox.get_row_at_index(1).map(|row| listbox.select_row(Some(&row)));
+                false
+            },
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
             | Alt_L | Alt_R | ISO_Left_Tab | Return => false,
             _ => {
@@ -96,7 +100,7 @@ fn activate(application: &gtk::Application) {
         }
         listbox.invalidate_filter();
         listbox.invalidate_sort();
-        listbox.select_row::<ListBoxRow>(None);
+        listbox.select_row(listbox.get_row_at_index(0).as_ref());
     }));
 
     entry.connect_activate(clone!(listbox => move |_| {
@@ -127,6 +131,8 @@ fn activate(application: &gtk::Application) {
             eb.score.cmp(&ea.score)
         }) as i32
     }))));
+
+    listbox.select_row(listbox.get_row_at_index(0).as_ref());
 
     window.add(&vbox);
     window.show_all()

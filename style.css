@@ -13,9 +13,10 @@
 
 .app-row {
     transition: unset;
-    margin: 1px 1px 5px 0px;
-    border-radius: 5px;
-    padding: 3px;
+    border-radius: 4px;
+    padding: 5px;
+    margin: 0 3px;
+    background-clip: padding-box;
 }
 
 .app-row:focus {
@@ -26,7 +27,6 @@
 .app-row:hover:selected {
     background-color: alpha(white, 0.1);
 }
-
 
 .app-row:hover {
     background-color: alpha(white, 0.035);
@@ -46,13 +46,13 @@
 }
 
 #app-list {
-   padding-right: 0px;
+   padding: 0 5px;
 }
 
 
 #root-box {
     min-width: 300px;
-    margin-left: 5px;
+    /* margin: 0 5px; */
 }
 
 scrollbar.vertical slider {
