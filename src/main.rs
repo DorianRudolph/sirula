@@ -8,14 +8,14 @@ use gtk::{
     BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, ImageBuilder, Label, LabelExt,
     ListBoxRow, Orientation, WidgetExt
 };
-use pango::EllipsizeMode;
+use pango::{Attribute, EllipsizeMode};
 use gio::AppInfo;
 use std::env::args;
 use log::LevelFilter;
 use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc, path::PathBuf, fs};
 use glib::shell_unquote;
 use futures::prelude::*;
-use log::{error, debug};
+use log::{debug};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde_derive::Deserialize;
 
@@ -34,7 +34,7 @@ const SEARCH_ENTRY_NAME: &str = "search";
 const SCROLL_NAME: &str = "scroll";
 
 fn default_side() -> Side { Side::Right }
-fn default_markup_highlight() -> String { "underline=\"single\"".to_string() }
+fn default_markup_highlight() -> String { "foreground=\"red\" underline=\"double\"".to_string() }
 fn default_markup_exe() -> String { "font_style=\"italic\" font_size=\"smaller\"".to_string() }
 fn default_exclusive() -> bool { true }
 
@@ -69,9 +69,51 @@ fn load_config() -> Config {
 
 struct AppEntry {
     name: String,
+    exe_range: Option<(u32, u32)>,
     info: AppInfo,
     label: Label,
     score: i64,
+}
+
+impl AppEntry {
+    fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, exe_attrs: &Vec<Attribute>, highlight_attrs: &Vec<Attribute>) {
+        self.score = if pattern.is_empty() {
+            self.label.set_attributes(None);
+            100
+        } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.name, pattern) {
+            let attr_list = pango::AttrList::new();
+
+            for i in indices {
+                for attr in highlight_attrs {
+                    let mut attr = attr.clone();
+                    let i = i as u32;
+                    attr.set_start_index(i);
+                    attr.set_end_index(i+1);
+                    attr_list.insert(attr);    
+                }
+            }
+
+            self.label.set_attributes(Some(&attr_list));
+            self.set_exe_markup(exe_attrs);
+        
+            score
+        } else {
+            0
+        };
+    }
+
+    fn set_exe_markup(&self, exe_attrs: &Vec<Attribute>) {
+        if let Some((lo, hi)) = self.exe_range {
+            let attr_list = self.label.get_attributes().unwrap_or(pango::AttrList::new());
+            for attr in exe_attrs {
+                let mut attr = attr.clone();
+                attr.set_start_index(lo);
+                attr.set_end_index(hi);
+                attr_list.insert(attr);    
+            }
+            self.label.set_attributes(Some(&attr_list));    
+        }
+    }
 }
 
 macro_rules! clone {
@@ -91,7 +133,7 @@ macro_rules! clone {
     );
 }
 
-fn load_entries() -> HashMap<ListBoxRow, AppEntry> {
+fn load_entries(exe_attrs: &Vec<Attribute>) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::get_default().unwrap();
     let icon_size = 64;
@@ -104,6 +146,17 @@ fn load_entries() -> HashMap<ListBoxRow, AppEntry> {
             _=> continue
         };
 
+        let mut exe_range = None;
+        if let Some(filename) = app.get_executable().and_then(|p| p.file_name().map(|f| f.to_owned())) {
+            if let Ok(filename) = shell_unquote(filename) {
+                let filename = filename.to_string_lossy();
+                if !name.to_lowercase().contains(&filename.to_lowercase()) {
+                    exe_range = Some(((name.len()+1) as u32, (name.len()+1+filename.len()) as u32));
+                    name = format!("{} {}", name, filename);
+                }
+            }
+        }
+
         let label = gtk::LabelBuilder::new()
             .xalign(0.0f32)
             .label(&name)
@@ -112,16 +165,6 @@ fn load_entries() -> HashMap<ListBoxRow, AppEntry> {
             .lines(2)
             .build();
         label.get_style_context().add_class(APP_LABEL_CLASS);
-
-        if let Some(filename) = app.get_executable().and_then(|p| p.file_name().map(|f| f.to_owned())) {
-            if let Ok(filename) = shell_unquote(filename) {
-                let filename = filename.to_string_lossy();
-                if !name.to_lowercase().contains(&filename.to_lowercase()) {
-                    label.set_markup(&format!("{} <small><i>{}</i></small>", name, filename));
-                    name = format!("{} {}", name, filename);
-                }
-            }
-        }
 
         let image = ImageBuilder::new().pixel_size(icon_size).build();
         if let Some(icon) = app
@@ -148,15 +191,15 @@ fn load_entries() -> HashMap<ListBoxRow, AppEntry> {
         row.add(&hbox);
         row.get_style_context().add_class(APP_ROW_CLASS);
 
-        entries.insert(
-            row,
-            AppEntry {
-                name,
-                info: app,
-                label,
-                score: 100,
-            },
-        );
+        let app_entry = AppEntry {
+            name,
+            exe_range,
+            info: app,
+            label,
+            score: 100,
+        };
+        app_entry.set_exe_markup(exe_attrs);
+        entries.insert(row,app_entry);
     }
     entries
 }
@@ -180,6 +223,12 @@ fn load_css() {
     }
 }
 
+fn parse_attributes(markup: &str) -> Vec<Attribute> {
+    let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0').expect("Failed to parse markup");
+    let mut iter = attributes.get_iterator().expect("Failed to parse markup");
+    iter.get_attrs()
+}
+
 fn activate(application: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(application);
 
@@ -188,14 +237,17 @@ fn activate(application: &gtk::Application) {
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);
     gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
-    gtk_layer_shell::auto_exclusive_zone_enable(&window);
+
+    if config.exclusive {
+        gtk_layer_shell::auto_exclusive_zone_enable(&window);
+    }
 
     // gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Left, 10);
     // gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Right, 10);
     // gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Top, 10);
 
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, config.side == Side::Left);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.side != Side::Left);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.side == Side::Right);
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
 
@@ -215,7 +267,8 @@ fn activate(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let entries = Rc::new(RefCell::new(load_entries()));
+    let exe_attrs = parse_attributes(&config.markup_exe);
+    let entries = Rc::new(RefCell::new(load_entries(&exe_attrs)));
 
     for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
         listbox.add(row);
@@ -230,7 +283,7 @@ fn activate(application: &gtk::Application) {
                 true
             }
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
-            | Alt_L | Alt_R | Return | ISO_Left_Tab => false,
+            | Alt_L | Alt_R | ISO_Left_Tab | Return => false,
             _ => {
                 if !event.get_is_modifier() && !entry.has_focus() {
                     entry.grab_focus_without_selecting();
@@ -240,6 +293,7 @@ fn activate(application: &gtk::Application) {
         })
     }));
 
+    let highlight_attrs = parse_attributes(&config.markup_highlight);
     let matcher = SkimMatcherV2::default();
     entry.connect_changed(clone!(entries, listbox => move |e| {
         let mut has_matches = false;
@@ -247,26 +301,7 @@ fn activate(application: &gtk::Application) {
         {
             let mut entries = entries.borrow_mut();
             for entry in entries.values_mut() {
-                entry.score = if text.is_empty() {
-                    entry.label.set_attributes(None);
-                    100
-                } else if let Some((score, indices)) = matcher.fuzzy_indices(&entry.name, &text) {
-                    let attr_list = pango::AttrList::new();
-
-                    for i in indices {
-                        let mut attr = pango::Attribute::new_background(65535, 0, 0).expect("Couldn't create new background");
-                        let i = i as u32;
-                        attr.set_start_index(i);
-                        attr.set_end_index(i+1);
-                        attr_list.insert(attr);
-                    }
-
-                    entry.label.set_attributes(Some(&attr_list));
-                
-                    score
-                } else {
-                    0
-                };
+                entry.update_match(&text, &matcher, &exe_attrs, &highlight_attrs);
                 if entry.score > 0 {
                     has_matches = true;
                 }
@@ -279,6 +314,12 @@ fn activate(application: &gtk::Application) {
             listbox.select_row(row.as_ref());
         } else {
             listbox.select_row::<ListBoxRow>(None);
+        }
+    }));
+
+    entry.connect_activate(clone!(listbox => move |_| {
+        if let Some(row) = listbox.get_selected_row() {
+            row.activate();
         }
     }));
 
