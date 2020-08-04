@@ -26,7 +26,7 @@ use locale::*;
 fn activate(application: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(application);
 
-    let config = load_config();
+    let config = Config::load();
 
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);

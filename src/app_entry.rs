@@ -35,13 +35,12 @@ impl AppEntry {
                 }
             }
 
-            self.label.set_attributes(Some(&attr_list));
-            self.set_exe_markup(exe_attrs);
-        
+            self.label.set_attributes(Some(&attr_list));        
             score
         } else {
             0
         };
+        self.set_exe_markup(exe_attrs);
     }
 
     fn set_exe_markup(&self, exe_attrs: &Vec<Attribute>) {

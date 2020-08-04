@@ -26,11 +26,13 @@ pub struct Config {
     pub exclusive: bool
 }
 
-pub fn load_config() -> Config {
-    let config_str = match get_config_file(CONFIG_FILE) {
-        Some(file) => std::fs::read_to_string(file).expect("Cannot read config"),
-        _ => "".to_owned()
-    };
-    let config: Config = toml::from_str(&config_str).expect("Cannot parse config: {}");
-    config
+impl Config {
+    pub fn load() -> Config {
+        let config_str = match get_config_file(CONFIG_FILE) {
+            Some(file) => std::fs::read_to_string(file).expect("Cannot read config"),
+            _ => "".to_owned()
+        };
+        let config: Config = toml::from_str(&config_str).expect("Cannot parse config: {}");
+        config
+    }
 }
