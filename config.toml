@@ -1,0 +1,4 @@
+side = "right"
+# markup_highlight = 'foreground="black" background="white"'
+markup_highlight = 'foreground="#dc69ff" underline="double"'
+# markup_default = 'background="gray"'

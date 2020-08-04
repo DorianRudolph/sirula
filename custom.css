@@ -1,7 +1,9 @@
-* {
-    font-family: Iosevka;
-    font-size: 16px;
-}
+/*
+You can type here any CSS rule recognized by GTK+.
+You can temporarily disable this custom CSS by clicking on the “Pause” button above.
+
+Changes are applied instantly and globally, for the whole application.
+*/
 
 .background {
     background: transparent;
@@ -14,14 +16,10 @@
 .app-row {
     transition: unset;
     margin: 1px 1px 5px 0px;
-    border-radius: 5px;
+    border-radius: 10px;
     padding: 3px;
 }
 
-.app-row:focus {
-    /* outline: 1px dotted alpha(white, 0.5); */
-    outline: unset;
-}
 
 .app-row:hover:selected {
     background-color: alpha(white, 0.1);
@@ -58,19 +56,3 @@
 scrollbar.vertical slider {
     background-color: alpha(white, 0.15);
 }
-
-#search {
-    background: transparent;
-    border: unset;
-    outline: unset;
-    box-shadow: inset 0px 0px 0px 1px alpha(#dc69ff, 0.5);
-    /* border-radius: unset;
-    border-bottom: 3px dotted alpha(white, 0.5); */
-    margin: 10px 5px 10px 5px;
-    font-size: 18px;
-    padding: 2px 8px;
-}
-
-selection {
-    background-color: alpha(#dc69ff, 0.5);
-} 

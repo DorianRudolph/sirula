@@ -88,29 +88,20 @@ fn activate(application: &gtk::Application) {
 
     let matcher = SkimMatcherV2::default();
     entry.connect_changed(clone!(entries, listbox => move |e| {
-        let mut has_matches = false;
         let text = e.get_text();
         {
             let mut entries = entries.borrow_mut();
             for entry in entries.values_mut() {
                 entry.update_match(&text, &matcher, &config);
-                if entry.score > 0 {
-                    has_matches = true;
-                }
             }
         }
         listbox.invalidate_filter();
         listbox.invalidate_sort();
-        if has_matches {
-            let row = listbox.get_row_at_index(0);
-            listbox.select_row(row.as_ref());
-        } else {
-            listbox.select_row::<ListBoxRow>(None);
-        }
+        listbox.select_row::<ListBoxRow>(None);
     }));
 
     entry.connect_activate(clone!(listbox => move |_| {
-        if let Some(row) = listbox.get_selected_row() {
+        if let Some(row) = listbox.get_row_at_index(0) {
             row.activate();
         }
     }));
@@ -132,7 +123,7 @@ fn activate(application: &gtk::Application) {
         let ea = &e[a];
         let eb = &e[b];
         (if ea.score == eb.score {
-            string_collate( &e[a].name, &e[b].name)
+            string_collate(&e[a].name, &e[b].name)
         } else {
             eb.score.cmp(&ea.score)
         }) as i32
