@@ -7,39 +7,50 @@ use gdk::keys::constants;
 use gio::prelude::*;
 use gtk::prelude::*;
 use gtk::{
-    BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, Image, ImageBuilder,
-    Label, LabelExt, ListBoxRow, Orientation,
+    BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, ImageBuilder, Label, LabelExt,
+    ListBoxRow, Orientation,
 };
 use pango::EllipsizeMode;
 
-use gio::{AppInfo};
+use gio::AppInfo;
 use std::env::args;
-use glib::variant::ToVariant;
-
 
 use log::LevelFilter;
-use std::io::Write;
+use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
 
 use futures::prelude::*;
 
 use log::debug;
 
-use glib::prelude::*;
-use glib::clone;
-use glib::Variant;
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
 struct AppEntry {
     name: String,
     info: AppInfo,
     label: Label,
-    image: Image,
-    row: ListBoxRow,
-    score: i32,
+    score: i64,
 }
 
-fn load_entries() -> Vec<AppEntry> {
+macro_rules! clone {
+    (@param _) => ( _ );
+    (@param $x:ident) => ( $x );
+    ($($n:ident),+ => move || $body:expr) => (
+        {
+            $( let $n = $n.clone(); )+
+            move || $body
+        }
+    );
+    ($($n:ident),+ => move |$($p:tt),+| $body:expr) => (
+        {
+            $( let $n = $n.clone(); )+
+            move |$(clone!(@param $p),)+| $body
+        }
+    );
+}
+
+fn load_entries() -> HashMap<ListBoxRow, AppEntry> {
     debug!("begin load_entries");
-    let mut entries = Vec::new();
+    let mut entries = HashMap::new();
 
     let icon_theme = IconTheme::get_default().unwrap();
     let icon_size = 64;
@@ -67,11 +78,13 @@ fn load_entries() -> Vec<AppEntry> {
             .map(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE))
             .flatten()
         {
-            main_context.spawn_local(icon.load_icon_async_future().map(clone!(@weak image => move |pb| {
-                if let Ok(pb) = pb {
-                    image.set_from_pixbuf(Some(&pb));
-                }
-            })));
+            main_context.spawn_local(icon.load_icon_async_future().map(
+                clone!(image => move |pb| {
+                    if let Ok(pb) = pb {
+                        image.set_from_pixbuf(Some(&pb));
+                    }
+                }),
+            ));
         }
 
         let hbox = BoxBuilder::new()
@@ -83,17 +96,16 @@ fn load_entries() -> Vec<AppEntry> {
         let row = ListBoxRow::new();
         row.add(&hbox);
 
-        entries.push(AppEntry {
-            name,
-            info: app,
-            label,
-            image,
+        entries.insert(
             row,
-            score: 100,
-        });
+            AppEntry {
+                name,
+                info: app,
+                label,
+                score: 100,
+            },
+        );
     }
-
-    entries.sort_by(|a, b| string_collate(&a.name, &b.name));
 
     debug!("built");
 
@@ -102,13 +114,6 @@ fn load_entries() -> Vec<AppEntry> {
 
 fn activate(application: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(application);
-
-    window.connect_show(|w| {
-        println!("asdf");
-    });
-
-    // window.set_size_request(1000, 500);
-    // window.resize(1000, 500);
 
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);
@@ -124,18 +129,11 @@ fn activate(application: &gtk::Application) {
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
 
-    // Set up a widget
-    // let label = gtk::Label::new(Some(""));
-    // label.set_markup("<span font_desc=\"20.0\">GTK Layer Shell example!</span>");
-
     let vbox = gtk::BoxBuilder::new()
         .name("rootbox")
         .orientation(gtk::Orientation::Vertical)
         .build();
-    let entry = gtk::EntryBuilder::new()
-        .name("search")
-        //.width_request(300)
-        .build();
+    let entry = gtk::EntryBuilder::new().name("search").build();
     vbox.pack_start(&entry, false, false, 0);
 
     let scroll = gtk::ScrolledWindowBuilder::new()
@@ -147,13 +145,11 @@ fn activate(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name("listbox").build();
     scroll.add(&listbox);
 
-    let entries = load_entries();
+    let entries = Rc::new(RefCell::new(load_entries()));
 
-    let mut i = 0;
-    for entry in entries {
-        // entry.row.set_action_target_value(Some(&i.to_variant()));
-        listbox.add(&entry.row);
-        i += 1;
+    for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
+        listbox.add(row);
+        // listbox.add(&LabelBuilder::new().build());
     }
 
     // let move_entry = clone!(@weak listbox, @weak window => @default-panic, move |dir| {
@@ -163,7 +159,7 @@ fn activate(application: &gtk::Application) {
     // });
 
     let entry_clone = entry.clone();
-    window.connect_key_press_event(  move |window, event| {
+    window.connect_key_press_event(move |window, event| {
         // println!("{:?} {:?}", event.get_keycode(), event.get_keyval().name());
         use constants::*;
         #[allow(non_upper_case_globals)]
@@ -173,7 +169,7 @@ fn activate(application: &gtk::Application) {
                 true
             }
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
-            | Alt_L | Alt_R | Return  => false,
+            | Alt_L | Alt_R | Return | ISO_Left_Tab => false,
             _ => {
                 if !event.get_is_modifier() && !entry_clone.has_focus() {
                     entry_clone.grab_focus_without_selecting();
@@ -183,19 +179,60 @@ fn activate(application: &gtk::Application) {
         })
     });
 
-    // entry.connect_changed(|e| {});
-    listbox.connect_row_activated(|_, r| {
-        println!("activate");
-        //println!("{:?}", r.get_action_target_value().unwrap().get::<i32>());
-    });
+    let matcher = SkimMatcherV2::default();
+    entry.connect_changed(clone!(entries, listbox => move |e| {
+        let text = e.get_text();
+        {
+            let mut entries = entries.borrow_mut();
+            for entry in entries.values_mut() {
+                entry.score = if text.is_empty() {
+                    entry.label.set_attributes(None);
+                    100
+                } else if let Some((score, indices)) = matcher.fuzzy_indices(&entry.name, &text) {
+                    let attr_list = pango::AttrList::new();
 
-    // listbox.set_filter_func(Some(Box::new(|r| {
-    //     r.get_index() > 10
-    // })));
+                    for i in indices {
+                        let mut attr = pango::Attribute::new_background(65535, 0, 0).expect("Couldn't create new background");
+                        let i = i as u32;
+                        attr.set_start_index(i);
+                        attr.set_end_index(i+1);
+                        attr_list.insert(attr);
+                    }
 
-    // listbox.set_sort_func(Some(Box::new(|a, b| {
-    //     a.get_index() - b.get_index()
-    // })));
+                    entry.label.set_attributes(Some(&attr_list));
+                
+                    score
+                } else {
+                    0
+                };
+            }
+        }
+        listbox.invalidate_filter();
+        listbox.invalidate_sort()
+    }));
+
+    listbox.connect_row_activated(clone!(entries, window => move |_, r| {
+        let e = entries.borrow();
+        let context = gdk::Display::get_default().unwrap().get_app_launch_context().unwrap();
+        e[r].info.launch(&[], Some(&context)).unwrap();
+        window.close();
+    }));
+
+    listbox.set_filter_func(Some(Box::new(clone!(entries => move |r| {
+        let e = entries.borrow();
+        e[r].score > 0
+    }))));
+
+    listbox.set_sort_func(Some(Box::new(clone!(entries => move |a, b| {
+        let e = entries.borrow();
+        let ea = &e[a];
+        let eb = &e[b];
+        if ea.score == eb.score {
+            string_collate( &e[a].name, &e[b].name) as i32
+        } else{
+            eb.score.cmp(&ea.score) as i32
+        }
+    }))));
 
     window.add(&vbox);
     window.show_all()

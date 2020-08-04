@@ -5,7 +5,6 @@ use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
     ptr,
-    vec::Vec,
 };
 
 pub fn string_collate(a: &str, b: &str) -> Ordering {
@@ -34,24 +33,7 @@ pub fn set_locale(category: i32, locale: &str) -> Option<String> {
     }
 }
 
+#[allow(unused)]
 pub fn get_locale(category: i32) -> Option<String> {
     unsafe { setlocale_wrapper(category, ptr::null()) }
-}
-
-pub fn get_locale_strings(locale: &Locale) -> Vec<String> {
-    let mut vec = Vec::new();
-    if let Locale::String(s) = locale {
-        let lang = s.language_code();
-        if let (Some(c), Some(m)) = (s.territory(), s.modifier()) {
-            vec.push(format!("{}_{}@{}", lang, c, m));
-        }
-        if let Some(c) = s.territory() {
-            vec.push(format!("{}_{}", lang, c));
-        }
-        if let Some(m) = s.modifier() {
-            vec.push(format!("{}@{}", lang, m));
-        }
-        vec.push(lang);
-    }
-    vec
 }
