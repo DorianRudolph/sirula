@@ -1,233 +1,27 @@
 use libc::LC_ALL;
-mod locale;
-use locale::*;
 use gdk::keys::constants;
 use gio::prelude::*;
 use gtk::prelude::*;
-use gtk::{
-    BoxBuilder, IconLookupFlags, IconTheme, IconThemeExt, ImageBuilder, Label, LabelExt,
-    ListBoxRow, Orientation, WidgetExt
-};
-use pango::{Attribute, EllipsizeMode};
-use gio::AppInfo;
+use gtk::{ListBoxRow, WidgetExt};
 use std::env::args;
 use log::LevelFilter;
-use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc, path::PathBuf, fs};
-use glib::shell_unquote;
-use futures::prelude::*;
-use log::{debug};
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use serde_derive::Deserialize;
+use std::{cell::RefCell, collections::HashMap, io::Write, rc::Rc};
+use fuzzy_matcher::skim::SkimMatcherV2;
 
-const APP_ID: &str = "com.dorian.sirula";
-const APP_NAME: &str = "sirula";
+mod consts;
+use consts::*;
 
-const STYLE_FILE: &str = "style.css";
-const CONFIG_FILE: &str = "config.toml";
+mod config;
+use config::*;
 
-const APP_LABEL_CLASS: &str = "app-label";
-const APP_ICON_CLASS: &str = "app-icon";
-const APP_ROW_CLASS: &str = "app-row";
-const ROOT_BOX_NAME: &str = "root-box";
-const LISTBOX_NAME: &str = "app-list";
-const SEARCH_ENTRY_NAME: &str = "search";
-const SCROLL_NAME: &str = "scroll";
+mod util;
+use util::*;
 
-fn default_side() -> Side { Side::Right }
-fn default_markup_highlight() -> String { "foreground=\"red\" underline=\"double\"".to_string() }
-fn default_markup_exe() -> String { "font_style=\"italic\" font_size=\"smaller\"".to_string() }
-fn default_exclusive() -> bool { true }
+mod app_entry;
+use app_entry::*;
 
-#[derive(Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "lowercase")]
-enum Side {
-    Left,
-    Right
-}
-
-#[derive(Deserialize, Debug)]
-struct Config {
-    #[serde(default = "default_side")]
-    side: Side,
-    #[serde(default = "default_markup_highlight")]
-    markup_highlight: String,
-    #[serde(default = "default_markup_exe")]
-    markup_exe: String,
-    #[serde(default = "default_exclusive")]
-    exclusive: bool
-}
-
-fn load_config() -> Config {
-    let config_str = match get_config_file(CONFIG_FILE) {
-        Some(file) => fs::read_to_string(file).expect("Cannot read config"),
-        _ => "".to_owned()
-    };
-    let config: Config = toml::from_str(&config_str).expect("Cannot parse config: {}");
-    debug!("Load config {:?}", config);
-    config
-}
-
-struct AppEntry {
-    name: String,
-    exe_range: Option<(u32, u32)>,
-    info: AppInfo,
-    label: Label,
-    score: i64,
-}
-
-impl AppEntry {
-    fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, exe_attrs: &Vec<Attribute>, highlight_attrs: &Vec<Attribute>) {
-        self.score = if pattern.is_empty() {
-            self.label.set_attributes(None);
-            100
-        } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.name, pattern) {
-            let attr_list = pango::AttrList::new();
-
-            for i in indices {
-                for attr in highlight_attrs {
-                    let mut attr = attr.clone();
-                    let i = i as u32;
-                    attr.set_start_index(i);
-                    attr.set_end_index(i+1);
-                    attr_list.insert(attr);    
-                }
-            }
-
-            self.label.set_attributes(Some(&attr_list));
-            self.set_exe_markup(exe_attrs);
-        
-            score
-        } else {
-            0
-        };
-    }
-
-    fn set_exe_markup(&self, exe_attrs: &Vec<Attribute>) {
-        if let Some((lo, hi)) = self.exe_range {
-            let attr_list = self.label.get_attributes().unwrap_or(pango::AttrList::new());
-            for attr in exe_attrs {
-                let mut attr = attr.clone();
-                attr.set_start_index(lo);
-                attr.set_end_index(hi);
-                attr_list.insert(attr);    
-            }
-            self.label.set_attributes(Some(&attr_list));    
-        }
-    }
-}
-
-macro_rules! clone {
-    (@param _) => ( _ );
-    (@param $x:ident) => ( $x );
-    ($($n:ident),+ => move || $body:expr) => (
-        {
-            $( let $n = $n.clone(); )+
-            move || $body
-        }
-    );
-    ($($n:ident),+ => move |$($p:tt),+| $body:expr) => (
-        {
-            $( let $n = $n.clone(); )+
-            move |$(clone!(@param $p),)+| $body
-        }
-    );
-}
-
-fn load_entries(exe_attrs: &Vec<Attribute>) -> HashMap<ListBoxRow, AppEntry> {
-    let mut entries = HashMap::new();
-    let icon_theme = IconTheme::get_default().unwrap();
-    let icon_size = 64;
-    let apps = gio::AppInfo::get_all();
-    let main_context = glib::MainContext::default();
-
-    for app in apps {
-        let mut name = match app.get_display_name() {
-            Some(n) if app.should_show() => n.to_string(),
-            _=> continue
-        };
-
-        let mut exe_range = None;
-        if let Some(filename) = app.get_executable().and_then(|p| p.file_name().map(|f| f.to_owned())) {
-            if let Ok(filename) = shell_unquote(filename) {
-                let filename = filename.to_string_lossy();
-                if !name.to_lowercase().contains(&filename.to_lowercase()) {
-                    exe_range = Some(((name.len()+1) as u32, (name.len()+1+filename.len()) as u32));
-                    name = format!("{} {}", name, filename);
-                }
-            }
-        }
-
-        let label = gtk::LabelBuilder::new()
-            .xalign(0.0f32)
-            .label(&name)
-            .wrap(true)
-            .ellipsize(EllipsizeMode::End)
-            .lines(2)
-            .build();
-        label.get_style_context().add_class(APP_LABEL_CLASS);
-
-        let image = ImageBuilder::new().pixel_size(icon_size).build();
-        if let Some(icon) = app
-            .get_icon()
-            .and_then(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE))
-        {
-            main_context.spawn_local(icon.load_icon_async_future().map(
-                clone!(image => move |pb| {
-                    if let Ok(pb) = pb {
-                        image.set_from_pixbuf(Some(&pb));
-                    }
-                }),
-            ));
-        }
-        image.get_style_context().add_class(APP_ICON_CLASS);
-
-        let hbox = BoxBuilder::new()
-            .orientation(Orientation::Horizontal)
-            .build();
-        hbox.pack_start(&image, false, false, 0);
-        hbox.pack_end(&label, true, true, 0);
-
-        let row = ListBoxRow::new();
-        row.add(&hbox);
-        row.get_style_context().add_class(APP_ROW_CLASS);
-
-        let app_entry = AppEntry {
-            name,
-            exe_range,
-            info: app,
-            label,
-            score: 100,
-        };
-        app_entry.set_exe_markup(exe_attrs);
-        entries.insert(row,app_entry);
-    }
-    entries
-}
-
-fn get_config_file(file: &str) -> Option<PathBuf> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME).unwrap();
-    xdg_dirs.find_config_file(file)
-}
-
-fn load_css() {
-    if let Some(file) = get_config_file(STYLE_FILE) {
-        let provider = gtk::CssProvider::new();
-        if let Err(err) = provider.load_from_path(file.to_str().unwrap()) {
-            eprintln!("Failed to load CSS: {}", err);
-        }
-        gtk::StyleContext::add_provider_for_screen(
-            &gdk::Screen::get_default().expect("Error initializing gtk css provider."),
-            &provider,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );    
-    }
-}
-
-fn parse_attributes(markup: &str) -> Vec<Attribute> {
-    let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0').expect("Failed to parse markup");
-    let mut iter = attributes.get_iterator().expect("Failed to parse markup");
-    iter.get_attrs()
-}
+mod locale;
+use locale::*;
 
 fn activate(application: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(application);
