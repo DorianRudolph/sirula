@@ -7,6 +7,9 @@ Feel free to submit pull requests for any feature you like.
 I wrote sirula partially to learn rust, so do not expect perfect rust code.
 I'd be happy to hear any criticism of my code.
 
+![](sample-config/sirula.gif)
+[open](https://raw.githubusercontent.com/DorianRudolph/sirula/master/sample-config/sirula.gif)
+
 ## Building
 
 - Dependency: [gtk-layer-shell](https://github.com/wmww/gtk-layer-shell)
