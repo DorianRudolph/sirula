@@ -1,8 +1,7 @@
 use libc::LC_ALL;
 use gdk::keys::constants;
-use gio::prelude::*;
-use gtk::prelude::*;
-use gtk::{ListBoxRow, WidgetExt};
+use gio::{prelude::*};
+use gtk::{prelude::*, ListBoxRow, WidgetExt};
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use fuzzy_matcher::skim::SkimMatcherV2;
@@ -111,8 +110,7 @@ fn activate(application: &gtk::Application) {
 
     listbox.connect_row_activated(clone!(entries, window => move |_, r| {
         let e = entries.borrow();
-        let context = gdk::Display::get_default().unwrap().get_app_launch_context().unwrap();
-        e[r].info.launch(&[], Some(&context)).unwrap();
+        launch_app(&e[r].info);
         window.close();
     }));
 
