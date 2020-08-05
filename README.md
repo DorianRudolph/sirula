@@ -14,7 +14,7 @@ I'd be happy to hear any criticism of my code.
 ![](sample-config/a/sirula.gif)
 [open](https://raw.githubusercontent.com/DorianRudolph/sirula/master/sample-config/sirula.gif)
 
-`sample-config/b`:
+`sample-config/b`: Overlay in the center of the screen.
 
 ![](sample-config/b/sirula.png)
 ## Building

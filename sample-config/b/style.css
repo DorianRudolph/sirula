@@ -1,0 +1,20 @@
+.app-row {
+    transition: unset;
+    padding: 5px 0 5px 10px;
+}
+
+.app-label {
+    margin-left: 10px;
+    font-family: Iosevka;
+    font-size: 16px;
+}
+
+#root-box {
+    border: 1px solid black;
+}
+
+#search {
+    font-size: 18px;
+    padding: 2px 8px;
+    margin: 5px;
+}
