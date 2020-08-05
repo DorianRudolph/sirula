@@ -1,8 +1,7 @@
 # This config file serves as documentation and contains the default values. You are free to omit all values.
 
-side = "right"  # appear "left" or "right" on the screen
 exclusive = true  # push all windows aside or appear above existing windows
-icon_size = 64
+icon_size = 64  # icon size in pixels
 lines = 2  # maximum number of lines of app labels
 
 # markup for app labels
@@ -13,3 +12,19 @@ markup_default = ''
 # the executable is appended to the app name if it is not contained (e.g., evince calls itself just "Document Viewer")
 markup_exe = 'font_style="italic" font_size="smaller"'
 markup_highlight = 'foreground="red" underline="double"'  # highlight matched characters
+
+# anchor window to screen edge
+anchor_left = false
+anchor_right = true
+anchor_top = true
+anchor_bottom = true
+
+# margin of window to screen edge
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# set width or height (-1 is unset)
+width = -1
+height = -1

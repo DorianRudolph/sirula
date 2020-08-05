@@ -39,9 +39,10 @@ mod locale;
 use locale::*;
 
 fn activate(application: &gtk::Application) {
-    let window = gtk::ApplicationWindow::new(application);
-
     let config = Config::load();
+    
+    let window = gtk::ApplicationWindow::new(application);
+    window.set_size_request(config.width, config.height);
 
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);
@@ -51,14 +52,15 @@ fn activate(application: &gtk::Application) {
         gtk_layer_shell::auto_exclusive_zone_enable(&window);
     }
 
-    // gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Left, 10);
-    // gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Right, 10);
-    // gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Top, 10);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Left, config.margin_left);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Right, config.margin_right);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Top, config.margin_top);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Bottom, config.margin_bottom);
 
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, config.side == Side::Left);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.side == Side::Right);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, config.anchor_left);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.anchor_right);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, config.anchor_top);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, config.anchor_bottom);
 
     let vbox = gtk::BoxBuilder::new()
         .name(ROOT_BOX_NAME)

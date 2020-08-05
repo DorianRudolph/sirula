@@ -21,38 +21,37 @@ use super::consts::*;
 use super::util::get_config_file;
 use pango::Attribute;
 
-fn default_side() -> Side { Side::Right }
-fn default_markup_default() -> Vec<Attribute> { Vec::new() }
-fn default_markup_highlight() -> Vec<Attribute> { parse_attributes("foreground=\"red\" underline=\"double\"").unwrap() }
-fn default_markup_exe() -> Vec<Attribute> { parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap() }
-fn default_exclusive() -> bool { true }
-fn default_icon_size() -> i32 { 64 }
-fn default_lines() -> i32 { 2 }
-
-#[derive(Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum Side {
-    Left,
-    Right
+macro_rules! make_config {
+    ($name:ident { $($field:ident : $type:ty $( = ($default:expr) $field_str:literal )? $( [$serde_opts:expr])? ),* }) => {
+        #[derive(Deserialize, Debug)]
+        pub struct $name { $(
+            #[serde( $(default = $field_str )? )]
+            $(#[serde($serde_opts)])?
+            pub $field: $type,
+        )* }
+        $( $( fn $field() -> $type { $default } )? )*
+    };
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Config {
-    #[serde(default = "default_side")]
-    pub side: Side,
-    #[serde(default = "default_markup_default", deserialize_with = "deserialize_markup")]
-    pub markup_default: Vec<Attribute>,
-    #[serde(default = "default_markup_highlight", deserialize_with = "deserialize_markup")]
-    pub markup_highlight: Vec<Attribute>,
-    #[serde(default = "default_markup_exe", deserialize_with = "deserialize_markup")]
-    pub markup_exe: Vec<Attribute>,
-    #[serde(default = "default_exclusive")]
-    pub exclusive: bool,
-    #[serde(default = "default_icon_size")]
-    pub icon_size: i32,
-    #[serde(default = "default_lines")]
-    pub lines: i32
-}
+// not sure how to avoid having to specify the name twice
+make_config!(Config {
+    markup_default: Vec<Attribute> = (Vec::new()) "markup_default" [deserialize_with = "deserialize_markup"],
+    markup_highlight: Vec<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
+    markup_exe: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_exe" [deserialize_with = "deserialize_markup"],
+    exclusive: bool = (true) "exclusive",
+    icon_size: i32 = (64) "icon_size",
+    lines: i32 = (2) "lines",
+    margin_left: i32 = (0) "margin_left",
+    margin_right: i32 = (0) "margin_right",
+    margin_top: i32 = (0) "margin_top",
+    margin_bottom: i32 = (0) "margin_bottom",
+    anchor_left: bool = (false) "anchor_left",
+    anchor_right: bool = (true) "anchor_right",
+    anchor_top: bool = (true) "anchor_top",
+    anchor_bottom: bool = (true) "anchor_bottom",
+    width: i32 = (-1) "width",
+    height: i32 = (-1) "height"
+});
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
 where
