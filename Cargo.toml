@@ -1,7 +1,7 @@
 [package]
-name = "launcher"
-version = "0.1.0"
-authors = ["Dorian Rudolph <dorian@mail.upb.de>"]
+name = "sirula"
+version = "0.0.1"
+authors = ["Dorian Rudolph"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -24,3 +24,6 @@ xdg = "2.2.0"
 serde = "1.0.114"
 serde_derive = "1.0.114"
 toml = "0.5.6"
+
+[profile.release]
+lto = true

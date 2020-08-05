@@ -1,3 +1,12 @@
+/*
+Sirula uses GTK and can be themed with CSS (https://developer.gnome.org/gtk3/stable/chap-css-overview.html)
+This theme was tested on top of Adwaita-Dark.
+See consts.rs for a list of defined classes and names.
+
+To remove the global theme completely, use
+* { all: unset; }
+*/
+
 * {
     font-family: Iosevka;
     font-size: 16px;
@@ -20,7 +29,6 @@
 }
 
 .app-row:focus {
-    /* outline: 1px dotted alpha(white, 0.5); */
     outline: unset;
 }
 
@@ -52,7 +60,6 @@
 
 #root-box {
     min-width: 300px;
-    /* margin: 0 5px; */
 }
 
 scrollbar.vertical slider {
@@ -64,8 +71,6 @@ scrollbar.vertical slider {
     border: unset;
     outline: unset;
     box-shadow: inset 0px 0px 0px 1px alpha(#dc69ff, 0.5);
-    /* border-radius: unset;
-    border-bottom: 3px dotted alpha(white, 0.5); */
     margin: 10px 5px 10px 5px;
     font-size: 18px;
     padding: 2px 8px;

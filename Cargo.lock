@@ -458,29 +458,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "launcher"
-version = "0.1.0"
-dependencies = [
- "freedesktop_entry_parser",
- "futures",
- "fuzzy-matcher",
- "gdk",
- "gdk-pixbuf",
- "gio",
- "glib",
- "gtk",
- "gtk-layer-shell",
- "libc",
- "locale-types",
- "pango",
- "pathsearch",
- "serde",
- "serde_derive",
- "toml",
- "xdg",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -709,6 +686,29 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "sirula"
+version = "0.0.1"
+dependencies = [
+ "freedesktop_entry_parser",
+ "futures",
+ "fuzzy-matcher",
+ "gdk",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "gtk",
+ "gtk-layer-shell",
+ "libc",
+ "locale-types",
+ "pango",
+ "pathsearch",
+ "serde",
+ "serde_derive",
+ "toml",
+ "xdg",
 ]
 
 [[package]]

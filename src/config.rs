@@ -9,6 +9,8 @@ fn default_markup_default() -> Vec<Attribute> { Vec::new() }
 fn default_markup_highlight() -> Vec<Attribute> { parse_attributes("foreground=\"red\" underline=\"double\"").unwrap() }
 fn default_markup_exe() -> Vec<Attribute> { parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap() }
 fn default_exclusive() -> bool { true }
+fn default_icon_size() -> i32 { 64 }
+fn default_lines() -> i32 { 2 }
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -28,7 +30,11 @@ pub struct Config {
     #[serde(default = "default_markup_exe", deserialize_with = "deserialize_markup")]
     pub markup_exe: Vec<Attribute>,
     #[serde(default = "default_exclusive")]
-    pub exclusive: bool
+    pub exclusive: bool,
+    #[serde(default = "default_icon_size")]
+    pub icon_size: i32,
+    #[serde(default = "default_lines")]
+    pub lines: i32
 }
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>

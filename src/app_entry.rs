@@ -58,7 +58,6 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
 pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::get_default().unwrap();
-    let icon_size = 64;
     let apps = gio::AppInfo::get_all();
     let main_context = glib::MainContext::default();
 
@@ -84,14 +83,14 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
             .label(&name)
             .wrap(true)
             .ellipsize(EllipsizeMode::End)
-            .lines(2)
+            .lines(config.lines)
             .build();
         label.get_style_context().add_class(APP_LABEL_CLASS);
 
-        let image = ImageBuilder::new().pixel_size(icon_size).build();
+        let image = ImageBuilder::new().pixel_size(config.icon_size).build();
         if let Some(icon) = app
             .get_icon()
-            .and_then(|icon| icon_theme.lookup_by_gicon(&icon, icon_size, IconLookupFlags::FORCE_SIZE))
+            .and_then(|icon| icon_theme.lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE))
         {
             main_context.spawn_local(icon.load_icon_async_future().map(
                 clone!(image => move |pb| {
