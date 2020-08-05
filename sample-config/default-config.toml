@@ -1,7 +1,7 @@
 # This config file serves as documentation and contains the default values. You are free to omit all values.
 
 side = "right"  # appear "left" or "right" on the screen
-exclusive = "true"  # push all windows aside or appear above existing windows
+exclusive = true  # push all windows aside or appear above existing windows
 icon_size = 64
 lines = 2  # maximum number of lines of app labels
 
