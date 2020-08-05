@@ -3,6 +3,8 @@ Sirula uses GTK and can be themed with CSS (https://developer.gnome.org/gtk3/sta
 This theme was tested on top of Adwaita-Dark.
 See consts.rs for a list of defined classes and names.
 
+The style.css can be omitted but sirula will not look very nice since there are no hardcoded margins.
+
 To remove the global theme completely, use
 * { all: unset; }
 */

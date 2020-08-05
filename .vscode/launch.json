@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'launcher'",
+            "name": "Debug executable 'sirula'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=launcher",
-                    "--package=launcher"
+                    "--bin=sirula",
+                    "--package=sirula"
                 ],
                 "filter": {
-                    "name": "launcher",
+                    "name": "sirula",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'launcher'",
+            "name": "Debug unit tests in executable 'sirula'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=launcher",
-                    "--package=launcher"
+                    "--bin=sirula",
+                    "--package=sirula"
                 ],
                 "filter": {
-                    "name": "launcher",
+                    "name": "sirula",
                     "kind": "bin"
                 }
             },

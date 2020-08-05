@@ -7,7 +7,7 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Rust: cargo run - launcher",
+			"label": "Rust: cargo run - sirula",
 			"group": {
 				"kind": "build",
 				"isDefault": true
