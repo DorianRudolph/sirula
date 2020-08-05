@@ -9,7 +9,7 @@ I'd be happy to hear any criticism of my code.
 
 ## Building
 
-- Dependency: [`gtk-layer-shell](https://github.com/wmww/gtk-layer-shell)
+- Dependency: [gtk-layer-shell](https://github.com/wmww/gtk-layer-shell)
 - Build: `cargo build --release`
   - Optionally, `strip` the binary to reduce size
 - Alternatively, install with `cargo install --path .`

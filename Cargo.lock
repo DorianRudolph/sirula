@@ -396,6 +396,7 @@ dependencies = [
 [[package]]
 name = "gtk-layer-shell"
 version = "0.1.0"
+source = "git+https://github.com/DorianRudolph/gtk-layer-shell-rs.git#f5ab7ba95fd7361816c9365cf8f484a7aa552e9a"
 dependencies = [
  "bitflags",
  "gdk",
@@ -409,6 +410,7 @@ dependencies = [
 [[package]]
 name = "gtk-layer-shell-sys"
 version = "0.0.1"
+source = "git+https://github.com/DorianRudolph/gtk-layer-shell-rs.git#f5ab7ba95fd7361816c9365cf8f484a7aa552e9a"
 dependencies = [
  "cairo-sys-rs",
  "gdk-pixbuf-sys",
