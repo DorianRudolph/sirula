@@ -20,6 +20,7 @@ use serde::{de::Error, Deserializer};
 use super::consts::*;
 use super::util::get_config_file;
 use pango::Attribute;
+use std::collections::HashMap;
 
 macro_rules! make_config {
     ($name:ident { $($field:ident : $type:ty $( = ($default:expr) $field_str:literal )? $( [$serde_opts:expr])? ),* }) => {
@@ -33,11 +34,23 @@ macro_rules! make_config {
     };
 }
 
+#[derive(Deserialize, Debug)]
+pub enum Field {
+    Comment,
+    Icon,
+    GenericName,
+    Id,
+    IdSuffix,
+    Keywords,
+    Exec,
+    ExecName
+}
+
 // not sure how to avoid having to specify the name twice
 make_config!(Config {
     markup_default: Vec<Attribute> = (Vec::new()) "markup_default" [deserialize_with = "deserialize_markup"],
     markup_highlight: Vec<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
-    markup_exe: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_exe" [deserialize_with = "deserialize_markup"],
+    markup_extra: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_extra" [deserialize_with = "deserialize_markup"],
     exclusive: bool = (true) "exclusive",
     icon_size: i32 = (64) "icon_size",
     lines: i32 = (2) "lines",
@@ -50,7 +63,10 @@ make_config!(Config {
     anchor_top: bool = (true) "anchor_top",
     anchor_bottom: bool = (true) "anchor_bottom",
     width: i32 = (-1) "width",
-    height: i32 = (-1) "height"
+    height: i32 = (-1) "height",
+    extra_field: Option<Field> = (Some(Field::IdSuffix)) "extra_field",
+    hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
+    name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>

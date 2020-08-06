@@ -143,7 +143,7 @@ fn activate(application: &gtk::Application) {
         let ea = &e[a];
         let eb = &e[b];
         (if ea.score == eb.score {
-            string_collate(&e[a].name, &e[b].name)
+            string_collate(&e[a].display_string, &e[b].display_string)
         } else {
             eb.score.cmp(&ea.score)
         }) as i32

@@ -25,11 +25,12 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::{AppInfo, AppInfoExt};
 use glib::shell_unquote;
 use futures::prelude::*;
-use super::{clone, consts::*, Config};
+use super::{clone, consts::*, Config, Field};
 
 pub struct AppEntry {
-    pub name: String,
-    pub exe_range: Option<(u32, u32)>,
+    pub display_string: String,
+    pub search_string: String,
+    pub extra_range: Option<(u32, u32)>,
     pub info: AppInfo,
     pub label: Label,
     pub score: i64,
@@ -43,9 +44,12 @@ impl AppEntry {
         self.score = if pattern.is_empty() {
             self.label.set_attributes(None);
             100
-        } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.name, pattern) {
+        } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.search_string, pattern) {
             for i in indices {
-                add_attrs(&attr_list, &config.markup_highlight, i as u32,  i as u32 + 1);
+                if i < self.display_string.len() {
+                    let i = i as u32;
+                    add_attrs(&attr_list, &config.markup_highlight, i,  i + 1);
+                }
             }
             score
         } else {
@@ -57,13 +61,26 @@ impl AppEntry {
     fn set_markup(&self, config: &Config) {
         let attr_list = AttrList::new();
 
-        add_attrs(&attr_list, &config.markup_default, 0, self.name.len() as u32);
-        if let Some((lo, hi)) = self.exe_range {
-            add_attrs(&attr_list, &config.markup_exe, lo, hi);   
+        add_attrs(&attr_list, &config.markup_default, 0, self.display_string.len() as u32);
+        if let Some((lo, hi)) = self.extra_range {
+            add_attrs(&attr_list, &config.markup_extra, lo, hi);   
         }
         self.label.set_attributes(Some(&attr_list));
     }
 }
+
+// fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
+//     match field {
+//         Comment => app.get_description().map(Into::into),
+//         Icon => app.get_icon().map(Into::into),
+//         // GenericName => app.get_name(),
+//         // Id,
+//         // IdSuffix,
+//         // Keywords,
+//         // Exec,
+//         // ExecName    
+//     }
+// }
 
 fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     for attr in attrs {
@@ -81,25 +98,38 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let main_context = glib::MainContext::default();
 
     for app in apps {
-        let mut name = match app.get_display_name() {
+        let name = match app.get_display_name() {
             Some(n) if app.should_show() => n.to_string(),
             _=> continue
         };
 
-        let mut exe_range = None;
-        if let Some(filename) = app.get_executable().and_then(|p| p.file_name().map(|f| f.to_owned())) {
-            if let Ok(filename) = shell_unquote(filename) {
-                let filename = filename.to_string_lossy();
-                if !name.to_lowercase().contains(&filename.to_lowercase()) {
-                    exe_range = Some(((name.len()+1) as u32, (name.len()+1+filename.len()) as u32));
-                    name = format!("{} {}", name, filename);
+
+        let mut extra_range = None;
+        let mut display_string = name.clone();
+        if let Some(id) = app.get_id().map(|id| id.to_string()) {
+            let id_parts : Vec<&str> = id.split('.').collect();
+            if let Some(id) = id_parts.get(id_parts.len() - 2) {
+                if !name.to_lowercase().contains(&id.to_lowercase()) {
+                    extra_range = Some(((name.len()+1) as u32, (name.len()+1+id.len()) as u32));
+                    display_string = format!("{} {}", name, id);
                 }
             }
         }
+        let search_string = display_string.clone();
+        // if let Some(filename) = app.get_executable().and_then(|p| p.file_name().map(|f| f.to_owned())) {
+        //     if let Ok(id) = shell_unquote(filename) {
+        //         let id = id.to_string_lossy();
+        //         println!("{:?}", app.get_id());
+        //         if !name.to_lowercase().contains(&filename.to_lowercase()) {
+        //             id_range = Some(((name.len()+1) as u32, (name.len()+1+filename.len()) as u32));
+        //             name = format!("{} {}", name, filename);
+        //         }
+        //     }
+        // }
 
         let label = gtk::LabelBuilder::new()
             .xalign(0.0f32)
-            .label(&name)
+            .label(&display_string)
             .wrap(true)
             .ellipsize(EllipsizeMode::End)
             .lines(config.lines)
@@ -132,8 +162,9 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
         row.get_style_context().add_class(APP_ROW_CLASS);
 
         let app_entry = AppEntry {
-            name,
-            exe_range,
+            display_string,
+            search_string,
+            extra_range,
             info: app,
             label,
             score: 100,
