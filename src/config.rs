@@ -34,16 +34,14 @@ macro_rules! make_config {
     };
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Copy, Clone)]
+#[serde(rename_all = "snake_case")]
 pub enum Field {
     Comment,
-    Icon,
-    GenericName,
     Id,
     IdSuffix,
-    Keywords,
-    Exec,
-    ExecName
+    Executable,
+    Commandline,
 }
 
 // not sure how to avoid having to specify the name twice
@@ -64,9 +62,10 @@ make_config!(Config {
     anchor_bottom: bool = (true) "anchor_bottom",
     width: i32 = (-1) "width",
     height: i32 = (-1) "height",
-    extra_field: Option<Field> = (Some(Field::IdSuffix)) "extra_field",
+    extra_field: Vec<Field> = (vec![Field::IdSuffix]) "extra_field",
     hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
-    name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides"
+    name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
+    hide_extra_if_contained: bool = (true) "hide_extra_if_contained"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>

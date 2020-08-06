@@ -69,18 +69,23 @@ impl AppEntry {
     }
 }
 
-// fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
-//     match field {
-//         Comment => app.get_description().map(Into::into),
-//         Icon => app.get_icon().map(Into::into),
-//         // GenericName => app.get_name(),
-//         // Id,
-//         // IdSuffix,
-//         // Keywords,
-//         // Exec,
-//         // ExecName    
-//     }
-// }
+fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
+    match field {
+        Field::Comment => app.get_description().map(Into::into),
+        Field::Id => app.get_id().and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
+        Field::IdSuffix => app.get_id().and_then(|id| {
+            let id = id.to_string();
+            let parts : Vec<&str> = id.split('.').collect();
+            parts.get(parts.len()-2).map(|s| s.to_string())
+        }),
+        Field::Executable => app.get_executable()
+            .and_then(|p| p.file_name().map(ToOwned::to_owned))
+            .and_then(|e| shell_unquote(e).ok())
+            .map(|s| s.to_string_lossy().to_string()),
+        //TODO: clean up command line from %
+        Field::Commandline => app.get_commandline().map(|s| s.to_string_lossy().to_string()) 
+    }
+}
 
 fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     for attr in attrs {
@@ -103,29 +108,28 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
             _=> continue
         };
 
-
-        let mut extra_range = None;
-        let mut display_string = name.clone();
-        if let Some(id) = app.get_id().map(|id| id.to_string()) {
-            let id_parts : Vec<&str> = id.split('.').collect();
-            if let Some(id) = id_parts.get(id_parts.len() - 2) {
-                if !name.to_lowercase().contains(&id.to_lowercase()) {
-                    extra_range = Some(((name.len()+1) as u32, (name.len()+1+id.len()) as u32));
-                    display_string = format!("{} {}", name, id);
-                }
+        let (display_string, extra_range) = if let Some(name) 
+                = get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id)) {
+            let i = name.find('\r');
+            (name.replace('\r', " "), i.map(|i| (i as u32 +1, name.len() as u32)))
+        } else {
+            let extra = config.extra_field.get(0).and_then(|f| get_app_field(&app, *f));
+            match extra {
+                Some(e) if (!config.hide_extra_if_contained || !name.to_lowercase().contains(&e.to_lowercase())) => (format!("{} {}", name, e), 
+                    Some((name.len() as u32 + 1, name.len() as u32 + 1 + e.len() as u32))),
+                _ => (name, None)
             }
-        }
-        let search_string = display_string.clone();
-        // if let Some(filename) = app.get_executable().and_then(|p| p.file_name().map(|f| f.to_owned())) {
-        //     if let Ok(id) = shell_unquote(filename) {
-        //         let id = id.to_string_lossy();
-        //         println!("{:?}", app.get_id());
-        //         if !name.to_lowercase().contains(&filename.to_lowercase()) {
-        //             id_range = Some(((name.len()+1) as u32, (name.len()+1+filename.len()) as u32));
-        //             name = format!("{} {}", name, filename);
-        //         }
-        //     }
-        // }
+        };
+
+        let hidden = config.hidden_fields.iter()
+            .map(|f| get_app_field(&app, *f).unwrap_or_default())
+            .collect::<Vec<String>>().join(" ");
+        
+        let search_string = if hidden.is_empty() {
+            display_string.clone()
+        } else {
+            format!("{} {}", display_string, hidden)
+        };
 
         let label = gtk::LabelBuilder::new()
             .xalign(0.0f32)

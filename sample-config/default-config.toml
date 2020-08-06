@@ -9,8 +9,8 @@ lines = 2  # maximum number of lines of app labels
 # therefore, we need to use pango directly
 # you can use all attributes of the <span> tag (https://developer.gnome.org/pygtk/stable/pango-markup-language.html)
 markup_default = ''
-# the executable is appended to the app name if it is not contained (e.g., evince calls itself just "Document Viewer")
-markup_exe = 'font_style="italic" font_size="smaller"'
+# an extra field is appended to the app name (e.g., evince calls itself just "Document Viewer")
+markup_extra = 'font_style="italic" font_size="smaller"'
 markup_highlight = 'foreground="red" underline="double"'  # highlight matched characters
 
 # anchor window to screen edge
@@ -28,3 +28,13 @@ margin_right = 0
 # set width or height (-1 is unset)
 width = -1
 height = -1
+
+# specify extra field to be displayed alongside the name (may be empty)
+extra_field = ["id_suffix"] # variants: id, id_suffix, executable, command_line
+hide_extra_if_contained = true # hide extra field if it is already contained in the app name
+
+hidden_fields = [] # list of fields considered for search but hidden
+
+# specify name overrides (id is the name of the desktop file)
+[name_overrides]
+# id = "name\rextra"hide_extra_if_contained
