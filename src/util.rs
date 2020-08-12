@@ -16,7 +16,8 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use super::consts::*;
-use glib::{ObjectExt, GString};
+use std::process::Command;
+use glib::{ObjectExt, GString, shell_parse_argv};
 use std::path::PathBuf;
 use gio::{AppInfo, AppInfoExt, AppInfoCreateFlags};
 use gtk::{CssProvider, CssProviderExt};
@@ -39,6 +40,21 @@ pub fn load_css() {
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );    
     }
+}
+
+pub fn is_cmd(text: &str, cmd_prefix: &str) -> bool {
+    !cmd_prefix.is_empty() && text.starts_with(cmd_prefix)
+}
+
+pub fn launch_cmd(cmd_line: &str) {
+    let mut parts = shell_parse_argv(cmd_line).expect("Error parsing command line");
+    let mut parts_iter = parts.iter_mut();
+
+    let cmd = parts_iter.next().expect("Expected command");
+
+    let mut child = Command::new(cmd);
+    child.args(parts_iter);
+    child.spawn().expect("Error spawning command");
 }
 
 pub fn launch_app(info: &AppInfo) {

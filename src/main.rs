@@ -40,6 +40,7 @@ use locale::*;
 
 fn activate(application: &gtk::Application) {
     let config = Config::load();
+    let cmd_prefix = config.command_prefix.clone();
     
     let window = gtk::ApplicationWindow::new(application);
     window.set_size_request(config.width, config.height);
@@ -108,12 +109,17 @@ fn activate(application: &gtk::Application) {
     }));
 
     let matcher = SkimMatcherV2::default();
-    entry.connect_changed(clone!(entries, listbox => move |e| {
+    entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
         let text = e.get_text();
+        let is_cmd = is_cmd(&text, &cmd_prefix);
         {
             let mut entries = entries.borrow_mut();
             for entry in entries.values_mut() {
-                entry.update_match(&text, &matcher, &config);
+                if is_cmd {
+                    entry.hide(); // hide entries in command mode
+                } else {
+                    entry.update_match(&text, &matcher, &config);
+                }
             }
         }
         listbox.invalidate_filter();
@@ -121,8 +127,13 @@ fn activate(application: &gtk::Application) {
         listbox.select_row(listbox.get_row_at_index(0).as_ref());
     }));
 
-    entry.connect_activate(clone!(listbox => move |_| {
-        if let Some(row) = listbox.get_row_at_index(0) {
+    entry.connect_activate(clone!(listbox, window => move |e| {
+        let text = e.get_text();
+        if is_cmd(&text, &cmd_prefix) { // command execution direct
+            let cmd_line = &text[1..].trim();
+            launch_cmd(cmd_line);
+            window.close();
+        } else if let Some(row) = listbox.get_row_at_index(0) {
             row.activate();
         }
     }));

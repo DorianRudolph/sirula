@@ -65,7 +65,8 @@ make_config!(Config {
     extra_field: Vec<Field> = (vec![Field::IdSuffix]) "extra_field",
     hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
     name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
-    hide_extra_if_contained: bool = (true) "hide_extra_if_contained"
+    hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
+    command_prefix: String = (":".into()) "command_prefix"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
