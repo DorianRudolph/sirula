@@ -62,6 +62,9 @@ fn activate(application: &gtk::Application) {
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, config.anchor_top);
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, config.anchor_bottom);
 
+    window.set_decorated(false);
+    window.set_app_paintable(true);
+
     let vbox = gtk::BoxBuilder::new()
         .name(ROOT_BOX_NAME)
         .orientation(gtk::Orientation::Vertical)
