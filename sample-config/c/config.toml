@@ -1,0 +1,16 @@
+markup_highlight = 'underline="low" weight="bold"'
+#markup_extra = 'foreground="blue"'
+#markup_default = 'foreground="yellow"'
+exclusive = true
+lines = 1
+icon_size = 20
+anchor_left = false
+anchor_right = false
+anchor_top = false
+anchor_bottom = false
+margin_top = 1
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+width = 750
+height = 450
