@@ -58,6 +58,10 @@ impl AppEntry {
         self.label.set_attributes(Some(&attr_list));
     }
 
+    pub fn hide(&mut self) {
+        self.score = 0;
+    }
+
     fn set_markup(&self, config: &Config) {
         let attr_list = AttrList::new();
 

@@ -12,3 +12,4 @@ margin_left = 0
 margin_right = 0
 width = 400
 height = 800
+command_prefix = ":"
