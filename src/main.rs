@@ -133,7 +133,7 @@ fn activate(application: &gtk::Application) {
     entry.connect_activate(clone!(listbox, window => move |e| {
         let text = e.get_text();
         if is_cmd(&text, &cmd_prefix) { // command execution direct
-            let cmd_line = &text[1..].trim();
+            let cmd_line = &text[cmd_prefix.len()..].trim();
             launch_cmd(cmd_line);
             window.close();
         } else if let Some(row) = listbox.get_row_at_index(0) {
