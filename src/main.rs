@@ -141,15 +141,20 @@ fn activate(application: &gtk::Application) {
         }
     }));
 
+    let min_score = 1;
+
     listbox.connect_row_activated(clone!(entries, window => move |_, r| {
-        let e = entries.borrow();
-        launch_app(&e[r].info);
-        window.close();
+        let es = entries.borrow();
+        let e = &es[r];
+        if e.score >= min_score {
+            launch_app(&e.info);
+            window.close();
+        }
     }));
 
     listbox.set_filter_func(Some(Box::new(clone!(entries => move |r| {
         let e = entries.borrow();
-        e[r].score > 0
+        e[r].score >= min_score
     }))));
 
     listbox.set_sort_func(Some(Box::new(clone!(entries => move |a, b| {
