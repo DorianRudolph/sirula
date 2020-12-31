@@ -35,6 +35,12 @@ hide_extra_if_contained = true # hide extra field if it is already contained in 
 
 hidden_fields = [] # list of fields considered for search but hidden
 
+exclude = [] # list of regexes for excluded app ids (name of the .desktop file)
+
+# prefix for running commands instead of launching an app (e.g., `:xeyes` to launch xeyes)
+# use "" to disable launching commands
+command_prefix = ":"
+
 # specify name overrides (id is the name of the desktop file)
 [name_overrides]
 # id = "name\rextra"hide_extra_if_contained

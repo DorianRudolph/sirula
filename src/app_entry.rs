@@ -26,6 +26,7 @@ use gio::{AppInfo, AppInfoExt};
 use glib::shell_unquote;
 use futures::prelude::*;
 use super::{clone, consts::*, Config, Field};
+use regex::RegexSet;
 
 pub struct AppEntry {
     pub display_string: String,
@@ -105,12 +106,19 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let icon_theme = IconTheme::get_default().unwrap();
     let apps = gio::AppInfo::get_all();
     let main_context = glib::MainContext::default();
+    let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
     for app in apps {
         let name = match app.get_display_name() {
             Some(n) if app.should_show() => n.to_string(),
             _=> continue
         };
+
+        if let Some(id) = app.get_id().map(|s| s.to_string()) {
+            if exclude.is_match(&id) {
+                continue
+            }
+        }
 
         let (display_string, extra_range) = if let Some(name) 
                 = get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id)) {
