@@ -1,0 +1,35 @@
+.app-row {
+    transition: unset;
+    padding: 5px 0 5px 10px;
+    background-color: #263238;
+}
+
+.app-row:selected {
+    background-color: #37474F;
+}
+
+.app-label {
+    margin-left: 10px;
+    font-family: Roboto;
+    font-size: 14px;
+    font-weight: 300;
+}
+
+.app-list {
+    background-color: #f00;
+ }
+
+#root-box {
+    border: 3px solid #263238;
+    border-radius: 5px 5px 5px 5px;
+    box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+    margin: 100px;
+    background-color: #263238;
+}
+
+#search {
+    font-family: Roboto;
+    font-size: 14px;
+    padding: 2px 8px;
+    margin: 5px;
+}
