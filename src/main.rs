@@ -38,7 +38,7 @@ use app_entry::*;
 mod locale;
 use locale::*;
 
-fn activate(application: &gtk::Application) {
+fn app_startup(application: &gtk::Application) {
     let config = Config::load();
     let cmd_prefix = config.command_prefix.clone();
     
@@ -181,9 +181,13 @@ fn main() {
         gtk::Application::new(Some(APP_ID), Default::default())
             .expect("Initialization failed...");
 
-    application.connect_activate(|app| {
+    application.connect_startup(|app| {
         load_css();
-        activate(app);
+        app_startup(app);
+    });
+
+    application.connect_activate(|_| {
+        //do nothing
     });
 
     application.run(&args().collect::<Vec<_>>());
