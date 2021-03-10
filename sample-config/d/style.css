@@ -1,0 +1,56 @@
+* {
+	background-clip: padding-box;
+	border-radius: 8px;
+}
+
+/* GtkApplicationWindow */
+.background {
+	opacity: 1;
+	background: transparent;
+	font-family: Rubik, sans-serif;
+	color: @fg_color;
+}
+
+#root-box {
+    /* Seems like this isn't really the root */
+    background: transparent;
+}
+
+#search {
+    font-size: 1.5em;
+    font-weight: 500;
+    padding: 8px 11px;
+    margin-bottom: 6px;
+    
+    color: inherit;
+    /*box-shadow: red 3px 3px 3px; */ /* We'd need a way to set the z index */
+}
+
+#scroll { /*background: transparent;*/ /* It never actually turns transparent */ }
+
+.app-list { /*background: transparent;*/ }
+
+.frame {
+	/*opacity: 0.5;*/
+	/*border-radius: 40px; *//* We'd need clipping to be effective */
+	background: transparent; 
+}
+
+.app-row {
+    transition: unset;
+    padding: 6px 0;
+    /*background-color: transparent;*/
+    /*border-radius: 1rem;*/ /*Clipping works kind of here*/
+    box-shadow: lightgray 0 4px 4px;
+}
+
+.app-label {
+    padding-left: 1em;
+    font-size: 16px;
+    border: none;
+}
+
+.app-icon {
+	border-radius: 1rem;
+	margin: 0 8px;
+}

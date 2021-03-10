@@ -1,0 +1,14 @@
+markup_highlight = 'underline="low"'
+exclusive = true
+lines = 10
+icon_size = 48
+anchor_left = false
+anchor_right = false
+anchor_top = false
+anchor_bottom = false
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+width = 600
+height = 400
