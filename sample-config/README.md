@@ -1,10 +1,10 @@
 # Sample Configs
 Find below some sample configs provided
 
-[a](#a)  
-[b](#b)  
-[c](#c)  
-[d](#d)  
+- [a](#a)  
+- [b](#b)  
+- [c](#c)  
+- [d](#d)  
 
 <a name="a"></a>
 ## a
