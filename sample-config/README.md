@@ -8,13 +8,13 @@ Find below some sample configs provided
 
 <a name="a"></a>
 ## a
-![](sample-config/a/sirula.gif)
+![](a/sirula.gif)
 ## b
 <a name="b"></a>
-![](sample-config/b/sirula.png)
+![](b/sirula.png)
 ## c
 <a name="c"></a>
-![](sample-config/c/screenshot.png)
+![](c/screenshot.png)
 ## d
 <a name="d"></a>
-![](sample-config/d/screenshot.png)
+![](d/screenshot.png)
