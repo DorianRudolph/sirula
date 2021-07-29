@@ -47,10 +47,14 @@ pub fn load_css() {
 }
 
 pub fn get_recents_path() -> Result<PathBuf, VarError> {
-    let mut file = PathBuf::from(match var(r"XDG_CACHE_HOME") {
-        Ok(file) => file,
-        Err(_) => var(r"HOME")? + r"./cache"
-    });
+    let mut file = match var(r"XDG_CACHE_HOME") {
+        Ok(file) => file.into(),
+        Err(_) => {
+            let mut home = PathBuf::from(var(r"HOME")?);
+            home.push(r".cache");
+            home
+        }
+    };
     file.push(r"sirula-recents");
     Ok(file)
 }
