@@ -38,11 +38,11 @@ pub struct AppEntry {
 }
 
 impl AppEntry {
-    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config) {
+    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config, recents: &HashMap<String, usize>) {
         self.set_markup(config);
 
         let attr_list = self.label.get_attributes().unwrap_or(AttrList::new());
-        self.score = if pattern.is_empty() {
+        let score = if pattern.is_empty() {
             self.label.set_attributes(None);
             100
         } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.search_string, pattern) {
@@ -56,6 +56,9 @@ impl AppEntry {
         } else {
             0
         };
+
+        self.score = Self::total_score(score, recents.get(&self.display_string));
+
         self.label.set_attributes(Some(&attr_list));
     }
 
@@ -71,6 +74,14 @@ impl AppEntry {
             add_attrs(&attr_list, &config.markup_extra, lo, hi);   
         }
         self.label.set_attributes(Some(&attr_list));
+    }
+
+    fn total_score(base: i64, count: Option<&usize>) -> i64 {
+        if base > 0 {
+            base + (count.cloned().unwrap_or(0) * 3) as i64
+        } else {
+            0
+        }
     }
 }
 
@@ -101,7 +112,7 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     }
 }
 
-pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
+pub fn load_entries(config: &Config, recents: &HashMap<String, usize>) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::get_default().unwrap();
     let apps = gio::AppInfo::get_all();
@@ -177,13 +188,15 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
         row.add(&hbox);
         row.get_style_context().add_class(APP_ROW_CLASS);
 
+        let score = AppEntry::total_score(100, recents.get(&display_string));
+
         let app_entry = AppEntry {
             display_string,
             search_string,
             extra_range,
             info: app,
             label,
-            score: 100,
+            score,
         };
         app_entry.set_markup(config);
         entries.insert(row,app_entry);

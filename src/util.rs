@@ -16,6 +16,10 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use super::consts::*;
+use std::env::{var, VarError};
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{Write, BufRead, BufReader, BufWriter};
 use std::process::Command;
 use glib::{ObjectExt, GString, shell_parse_argv};
 use std::path::PathBuf;
@@ -40,6 +44,29 @@ pub fn load_css() {
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );    
     }
+}
+
+pub fn get_recents_path() -> Result<PathBuf, VarError> {
+    let mut file = PathBuf::from(match var(r"XDG_CACHE_HOME") {
+        Ok(file) => file,
+        Err(_) => var(r"HOME")? + r"./cache"
+    });
+    file.push(r"sirula-recents");
+    Ok(file)
+}
+
+pub fn load_recents() -> Option<HashMap<String, usize>> {
+    let mut file = BufReader::new(File::open(&get_recents_path().ok()?).ok()?);
+    let (mut line, mut recents) = (String::new(), HashMap::new());
+    while file.read_line(&mut line).ok()? > 0 {
+        if let Some((num, name)) = line.split_once(' ') {
+            if let Ok(num) = num.parse::<usize>() {
+                recents.insert(name.trim_end().into(), num);
+            }
+        }
+        line.clear()
+    }
+    Some(recents)
 }
 
 pub fn is_cmd(text: &str, cmd_prefix: &str) -> bool {
@@ -80,6 +107,27 @@ pub fn launch_app(info: &AppInfo) {
     }
 
     info.launch(&[], Some(&context)).expect("Error while launching terminal app");
+}
+
+pub fn store_recents(recents: &HashMap<String, usize>, mut current: &str) {
+    let file = get_recents_path().expect("Error reading variable");
+    let file = File::create(file).expect("Cannot open recents file for writing");
+    let mut file = BufWriter::new(file);
+
+    let write_error = "Cannot write to recents file";
+    for (name, &(mut num)) in recents {
+        if name == current {
+            current = "";
+            num += 1;
+        }
+        write!(&mut file, "{} {}\n", num, name).expect(write_error);
+    }
+
+    if !current.is_empty() {
+        write!(&mut file, "1 {}\n", current).expect(write_error);
+    }
+
+    file.flush().expect(write_error)
 }
 
 #[macro_export]
