@@ -18,6 +18,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use pango::{Attribute, EllipsizeMode, AttrList};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use gtk::{IconTheme, IconThemeExt, ListBoxRow, WidgetExt, Label, LabelExt, prelude::*, BoxBuilder, IconLookupFlags, ImageBuilder,
     Orientation};
@@ -25,9 +26,13 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::{AppInfo, AppInfoExt};
 use glib::shell_unquote;
 use futures::prelude::*;
+use crate::locale::string_collate;
+use crate::util::load_history;
+
 use super::{clone, consts::*, Config, Field};
 use regex::RegexSet;
 
+#[derive(Eq)]
 pub struct AppEntry {
     pub display_string: String,
     pub search_string: String,
@@ -35,14 +40,15 @@ pub struct AppEntry {
     pub info: AppInfo,
     pub label: Label,
     pub score: i64,
+    pub usage: usize,
 }
 
 impl AppEntry {
-    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config, history: &HashMap<String, usize>) {
+    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config) {
         self.set_markup(config);
 
         let attr_list = self.label.get_attributes().unwrap_or(AttrList::new());
-        let score = if pattern.is_empty() {
+        self.score = if pattern.is_empty() {
             self.label.set_attributes(None);
             100
         } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.search_string, pattern) {
@@ -56,8 +62,6 @@ impl AppEntry {
         } else {
             0
         };
-
-        self.score = Self::total_score(score, history.get(&self.display_string));
 
         self.label.set_attributes(Some(&attr_list));
     }
@@ -75,13 +79,29 @@ impl AppEntry {
         }
         self.label.set_attributes(Some(&attr_list));
     }
+}
 
-    fn total_score(base: i64, count: Option<&usize>) -> i64 {
-        if base > 0 {
-            base + (count.cloned().unwrap_or(0) * 3) as i64
-        } else {
-            0
+impl PartialEq for AppEntry {
+    fn eq(&self, other: &Self) -> bool {
+        self.score.eq(&other.score) && self.usage.eq(&other.usage)
+    }
+}
+
+impl Ord for AppEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.score.cmp(&other.score) {
+            Ordering::Equal => match self.usage.cmp(&other.usage) {
+                Ordering::Equal => string_collate(&self.display_string, &other.display_string),
+                ord => ord.reverse()
+            }
+            ord => ord.reverse()
         }
+    }
+}
+
+impl PartialOrd for AppEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -112,12 +132,16 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     }
 }
 
-pub fn load_entries(config: &Config, history: &HashMap<String, usize>) -> HashMap<ListBoxRow, AppEntry> {
+pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::get_default().unwrap();
     let apps = gio::AppInfo::get_all();
     let main_context = glib::MainContext::default();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
+
+    let history = config.recent_first
+        .then(load_history).flatten()
+        .unwrap_or_else(HashMap::new);
 
     for app in apps {
         let name = match app.get_display_name() {
@@ -188,7 +212,7 @@ pub fn load_entries(config: &Config, history: &HashMap<String, usize>) -> HashMa
         row.add(&hbox);
         row.get_style_context().add_class(APP_ROW_CLASS);
 
-        let score = AppEntry::total_score(100, history.get(&display_string));
+        let usage = history.get(&display_string).cloned().unwrap_or(0);
 
         let app_entry = AppEntry {
             display_string,
@@ -196,10 +220,11 @@ pub fn load_entries(config: &Config, history: &HashMap<String, usize>) -> HashMa
             extra_range,
             info: app,
             label,
-            score,
+            score: 100,
+            usage,
         };
         app_entry.set_markup(config);
-        entries.insert(row,app_entry);
+        entries.insert(row, app_entry);
     }
     entries
 }

@@ -15,7 +15,8 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::consts::*;
+use crate::consts::*;
+use crate::app_entry::AppEntry;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Write, BufRead, BufReader, BufWriter};
@@ -111,23 +112,17 @@ pub fn launch_app(info: &AppInfo) {
     info.launch(&[], Some(&context)).expect("Error while launching terminal app");
 }
 
-pub fn store_history(history: &HashMap<String, usize>, mut current: &str) {
+pub fn store_history<'a, I>(entries: I, current: &str)
+where I: Iterator<Item=&'a AppEntry> {
     let file = get_history_file(true).expect("Cannot create history file or cache directory");
     let file = File::create(file).expect("Cannot open history file for writing");
     let mut file = BufWriter::new(file);
 
     let write_error = "Cannot write to history file";
-    for (name, &(mut num)) in history {
-        if name == current {
-            current = "";
-            num += 1;
-        }
-        write!(&mut file, "{} {}\n", num, name).expect(write_error);
-    }
-
-    if !current.is_empty() {
-        write!(&mut file, "1 {}\n", current).expect(write_error);
-    }
+    entries
+        .map(|e| (&e.display_string[..], e.usage + (e.display_string == current) as usize))
+        .filter(|(_, u)| *u != 0)
+        .for_each(|(n, u)| write!(&mut file, "{} {}\n", u, n).expect(write_error));
 
     file.flush().expect(write_error)
 }

@@ -82,12 +82,7 @@ fn app_startup(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let history: Rc<_> = config.recent_first
-        .then(load_history).flatten()
-        .unwrap_or_else(HashMap::new)
-        .into();
-
-    let entries = Rc::new(RefCell::new(load_entries(&config, &history)));
+    let entries = Rc::new(RefCell::new(load_entries(&config)));
 
     for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
         listbox.add(row);
@@ -117,7 +112,7 @@ fn app_startup(application: &gtk::Application) {
     }));
 
     let matcher = SkimMatcherV2::default();
-    entry.connect_changed(clone!(entries, listbox, history, cmd_prefix => move |e| {
+    entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
         let text = e.get_text();
         let is_cmd = is_cmd(&text, &cmd_prefix);
         {
@@ -126,7 +121,7 @@ fn app_startup(application: &gtk::Application) {
                 if is_cmd {
                     entry.hide(); // hide entries in command mode
                 } else {
-                    entry.update_match(&text, &matcher, &config, &history);
+                    entry.update_match(&text, &matcher, &config);
                 }
             }
         }
@@ -148,12 +143,12 @@ fn app_startup(application: &gtk::Application) {
 
     let min_score = 1;
 
-    listbox.connect_row_activated(clone!(entries, history, window => move |_, r| {
+    listbox.connect_row_activated(clone!(entries, window => move |_, r| {
         let es = entries.borrow();
         let e = &es[r];
         if e.score >= min_score {
             launch_app(&e.info);
-            store_history(&history, &e.display_string);
+            store_history(es.values(), &e.display_string);
             window.close();
         }
     }));
@@ -165,13 +160,7 @@ fn app_startup(application: &gtk::Application) {
 
     listbox.set_sort_func(Some(Box::new(clone!(entries => move |a, b| {
         let e = entries.borrow();
-        let ea = &e[a];
-        let eb = &e[b];
-        (if ea.score == eb.score {
-            string_collate(&e[a].display_string, &e[b].display_string)
-        } else {
-            eb.score.cmp(&ea.score)
-        }) as i32
+        e[a].cmp(&e[b]) as i32
     }))));
 
     listbox.select_row(listbox.get_row_at_index(0).as_ref());
