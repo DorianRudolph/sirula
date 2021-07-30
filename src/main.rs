@@ -82,12 +82,12 @@ fn app_startup(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let recents: Rc<_> = config.recent_first
-        .then(load_recents).flatten()
+    let history: Rc<_> = config.recent_first
+        .then(load_history).flatten()
         .unwrap_or_else(HashMap::new)
         .into();
 
-    let entries = Rc::new(RefCell::new(load_entries(&config, &recents)));
+    let entries = Rc::new(RefCell::new(load_entries(&config, &history)));
 
     for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
         listbox.add(row);
@@ -117,7 +117,7 @@ fn app_startup(application: &gtk::Application) {
     }));
 
     let matcher = SkimMatcherV2::default();
-    entry.connect_changed(clone!(entries, listbox, recents, cmd_prefix => move |e| {
+    entry.connect_changed(clone!(entries, listbox, history, cmd_prefix => move |e| {
         let text = e.get_text();
         let is_cmd = is_cmd(&text, &cmd_prefix);
         {
@@ -126,7 +126,7 @@ fn app_startup(application: &gtk::Application) {
                 if is_cmd {
                     entry.hide(); // hide entries in command mode
                 } else {
-                    entry.update_match(&text, &matcher, &config, &recents);
+                    entry.update_match(&text, &matcher, &config, &history);
                 }
             }
         }
@@ -148,12 +148,12 @@ fn app_startup(application: &gtk::Application) {
 
     let min_score = 1;
 
-    listbox.connect_row_activated(clone!(entries, recents, window => move |_, r| {
+    listbox.connect_row_activated(clone!(entries, history, window => move |_, r| {
         let es = entries.borrow();
         let e = &es[r];
         if e.score >= min_score {
             launch_app(&e.info);
-            store_recents(&recents, &e.display_string);
+            store_history(&history, &e.display_string);
             window.close();
         }
     }));

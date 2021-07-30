@@ -16,7 +16,6 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use super::consts::*;
-use std::env::{var, VarError};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Write, BufRead, BufReader, BufWriter};
@@ -27,9 +26,21 @@ use gio::{AppInfo, AppInfoExt, AppInfoCreateFlags};
 use gtk::{CssProvider, CssProviderExt};
 use freedesktop_entry_parser::parse_entry;
 
+pub fn get_xdg_dirs() -> xdg::BaseDirectories {
+    xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
+}
+
 pub fn get_config_file(file: &str) -> Option<PathBuf> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME).unwrap();
-    xdg_dirs.find_config_file(file)
+    get_xdg_dirs().find_config_file(file)
+}
+
+pub fn get_history_file(place: bool) -> Option<PathBuf>  {
+    let xdg = get_xdg_dirs();
+    if place {
+        xdg.place_cache_file(HISTORY_FILE).ok()
+    } else {
+        xdg.find_cache_file(HISTORY_FILE)
+    }
 }
 
 pub fn load_css() {
@@ -46,31 +57,18 @@ pub fn load_css() {
     }
 }
 
-pub fn get_recents_path() -> Result<PathBuf, VarError> {
-    let mut file = match var(r"XDG_CACHE_HOME") {
-        Ok(file) => file.into(),
-        Err(_) => {
-            let mut home = PathBuf::from(var(r"HOME")?);
-            home.push(r".cache");
-            home
-        }
-    };
-    file.push(r"sirula-recents");
-    Ok(file)
-}
-
-pub fn load_recents() -> Option<HashMap<String, usize>> {
-    let mut file = BufReader::new(File::open(&get_recents_path().ok()?).ok()?);
-    let (mut line, mut recents) = (String::new(), HashMap::new());
+pub fn load_history() -> Option<HashMap<String, usize>> {
+    let mut file = BufReader::new(File::open(&get_history_file(false)?).ok()?);
+    let (mut line, mut history) = (String::new(), HashMap::new());
     while file.read_line(&mut line).ok()? > 0 {
         if let Some((num, name)) = line.split_once(' ') {
             if let Ok(num) = num.parse::<usize>() {
-                recents.insert(name.trim_end().into(), num);
+                history.insert(name.trim_end().into(), num);
             }
         }
         line.clear()
     }
-    Some(recents)
+    Some(history)
 }
 
 pub fn is_cmd(text: &str, cmd_prefix: &str) -> bool {
@@ -113,13 +111,13 @@ pub fn launch_app(info: &AppInfo) {
     info.launch(&[], Some(&context)).expect("Error while launching terminal app");
 }
 
-pub fn store_recents(recents: &HashMap<String, usize>, mut current: &str) {
-    let file = get_recents_path().expect("Error reading variable");
-    let file = File::create(file).expect("Cannot open recents file for writing");
+pub fn store_history(history: &HashMap<String, usize>, mut current: &str) {
+    let file = get_history_file(true).expect("Cannot create history file or cache directory");
+    let file = File::create(file).expect("Cannot open history file for writing");
     let mut file = BufWriter::new(file);
 
-    let write_error = "Cannot write to recents file";
-    for (name, &(mut num)) in recents {
+    let write_error = "Cannot write to history file";
+    for (name, &(mut num)) in history {
         if name == current {
             current = "";
             num += 1;

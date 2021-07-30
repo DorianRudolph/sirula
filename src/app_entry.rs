@@ -38,7 +38,7 @@ pub struct AppEntry {
 }
 
 impl AppEntry {
-    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config, recents: &HashMap<String, usize>) {
+    pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config, history: &HashMap<String, usize>) {
         self.set_markup(config);
 
         let attr_list = self.label.get_attributes().unwrap_or(AttrList::new());
@@ -57,7 +57,7 @@ impl AppEntry {
             0
         };
 
-        self.score = Self::total_score(score, recents.get(&self.display_string));
+        self.score = Self::total_score(score, history.get(&self.display_string));
 
         self.label.set_attributes(Some(&attr_list));
     }
@@ -112,7 +112,7 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     }
 }
 
-pub fn load_entries(config: &Config, recents: &HashMap<String, usize>) -> HashMap<ListBoxRow, AppEntry> {
+pub fn load_entries(config: &Config, history: &HashMap<String, usize>) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::get_default().unwrap();
     let apps = gio::AppInfo::get_all();
@@ -188,7 +188,7 @@ pub fn load_entries(config: &Config, recents: &HashMap<String, usize>) -> HashMa
         row.add(&hbox);
         row.get_style_context().add_class(APP_ROW_CLASS);
 
-        let score = AppEntry::total_score(100, recents.get(&display_string));
+        let score = AppEntry::total_score(100, history.get(&display_string));
 
         let app_entry = AppEntry {
             display_string,
