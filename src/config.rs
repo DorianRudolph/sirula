@@ -92,6 +92,6 @@ impl Config {
 fn parse_attributes(markup: &str) -> Result<Vec<Attribute>, String> {
     let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0')
         .map_err(|err| format!("Failed to parse markup: {}", err))?;
-    let mut iter = attributes.get_iterator().ok_or_else(||"Failed to parse markup")?;
-    Ok(iter.get_attrs())
+    let mut iter = attributes.iterator().ok_or_else(||"Failed to parse markup")?;
+    Ok(iter.attrs())
 }

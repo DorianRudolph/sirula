@@ -18,7 +18,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 use libc::LC_ALL;
 use gdk::keys::constants;
 use gio::{prelude::*};
-use gtk::{prelude::*, ListBoxRow, WidgetExt};
+use gtk::{prelude::*, ListBoxRow};
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use fuzzy_matcher::skim::SkimMatcherV2;
@@ -91,19 +91,19 @@ fn app_startup(application: &gtk::Application) {
     window.connect_key_press_event(clone!(entry, listbox => move |window, event| {
         use constants::*;
         #[allow(non_upper_case_globals)]
-        Inhibit(match event.get_keyval() {
+        Inhibit(match event.keyval() {
             Escape => {
                 window.close();
                 true
             },
             Down | Tab if entry.has_focus() => {
-                listbox.get_row_at_index(1).map(|row| listbox.select_row(Some(&row)));
+                listbox.row_at_index(1).map(|row| listbox.select_row(Some(&row)));
                 false
             },
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
             | Alt_L | Alt_R | ISO_Left_Tab | Return => false,
             _ => {
-                if !event.get_is_modifier() && !entry.has_focus() {
+                if !event.is_modifier() && !entry.has_focus() {
                     entry.grab_focus_without_selecting();
                 }
                 false
@@ -113,7 +113,7 @@ fn app_startup(application: &gtk::Application) {
 
     let matcher = SkimMatcherV2::default();
     entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
-        let text = e.get_text();
+        let text = e.text();
         let is_cmd = is_cmd(&text, &cmd_prefix);
         {
             let mut entries = entries.borrow_mut();
@@ -127,16 +127,16 @@ fn app_startup(application: &gtk::Application) {
         }
         listbox.invalidate_filter();
         listbox.invalidate_sort();
-        listbox.select_row(listbox.get_row_at_index(0).as_ref());
+        listbox.select_row(listbox.row_at_index(0).as_ref());
     }));
 
     entry.connect_activate(clone!(listbox, window => move |e| {
-        let text = e.get_text();
+        let text = e.text();
         if is_cmd(&text, &cmd_prefix) { // command execution direct
             let cmd_line = &text[cmd_prefix.len()..].trim();
             launch_cmd(cmd_line);
             window.close();
-        } else if let Some(row) = listbox.get_row_at_index(0) {
+        } else if let Some(row) = listbox.row_at_index(0) {
             row.activate();
         }
     }));
@@ -168,7 +168,7 @@ fn app_startup(application: &gtk::Application) {
         }) as i32
     }))));
 
-    listbox.select_row(listbox.get_row_at_index(0).as_ref());
+    listbox.select_row(listbox.row_at_index(0).as_ref());
 
     window.add(&vbox);
     window.show_all()
@@ -177,9 +177,7 @@ fn app_startup(application: &gtk::Application) {
 fn main() {
     set_locale(LC_ALL, "");
 
-    let application =
-        gtk::Application::new(Some(APP_ID), Default::default())
-            .expect("Initialization failed...");
+    let application = gtk::Application::new(Some(APP_ID), Default::default());
 
     application.connect_startup(|app| {
         load_css();
@@ -190,5 +188,5 @@ fn main() {
         //do nothing
     });
 
-    application.run(&args().collect::<Vec<_>>());
+    application.run_with_args(&args().collect::<Vec<_>>());
 }

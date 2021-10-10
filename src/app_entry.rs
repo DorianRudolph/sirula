@@ -19,10 +19,10 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use pango::{Attribute, EllipsizeMode, AttrList};
 use std::collections::HashMap;
-use gtk::{IconTheme, IconThemeExt, ListBoxRow, WidgetExt, Label, LabelExt, prelude::*, BoxBuilder, IconLookupFlags, ImageBuilder,
+use gtk::{IconTheme, ListBoxRow, Label, prelude::*, BoxBuilder, IconLookupFlags, ImageBuilder,
     Orientation};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use gio::{AppInfo, AppInfoExt};
+use gio::AppInfo;
 use glib::shell_unquote;
 use futures::prelude::*;
 use super::{clone, consts::*, Config, Field};
@@ -41,7 +41,7 @@ impl AppEntry {
     pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config) {
         self.set_markup(config);
 
-        let attr_list = self.label.get_attributes().unwrap_or(AttrList::new());
+        let attr_list = self.label.attributes().unwrap_or(AttrList::new());
         self.score = if pattern.is_empty() {
             self.label.set_attributes(None);
             100
@@ -76,19 +76,18 @@ impl AppEntry {
 
 fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
     match field {
-        Field::Comment => app.get_description().map(Into::into),
-        Field::Id => app.get_id().and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
-        Field::IdSuffix => app.get_id().and_then(|id| {
+        Field::Comment => app.description().map(Into::into),
+        Field::Id => app.id().and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
+        Field::IdSuffix => app.id().and_then(|id| {
             let id = id.to_string();
             let parts : Vec<&str> = id.split('.').collect();
             parts.get(parts.len()-2).map(|s| s.to_string())
         }),
-        Field::Executable => app.get_executable()
-            .and_then(|p| p.file_name().map(ToOwned::to_owned))
+        Field::Executable => app.executable().file_name()
             .and_then(|e| shell_unquote(e).ok())
             .map(|s| s.to_string_lossy().to_string()),
         //TODO: clean up command line from %
-        Field::Commandline => app.get_commandline().map(|s| s.to_string_lossy().to_string()) 
+        Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()) 
     }
 }
 
@@ -103,18 +102,19 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
 
 pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
-    let icon_theme = IconTheme::get_default().unwrap();
-    let apps = gio::AppInfo::get_all();
+    let icon_theme = IconTheme::default().unwrap();
+    let apps = gio::AppInfo::all();
     let main_context = glib::MainContext::default();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
     for app in apps {
-        let name = match app.get_display_name() {
-            Some(n) if app.should_show() => n.to_string(),
-            _=> continue
-        };
+        if !app.should_show() {
+            continue
+        }
 
-        if let Some(id) = app.get_id().map(|s| s.to_string()) {
+        let name = app.display_name().to_string();  
+
+        if let Some(id) = app.id().map(|s| s.to_string()) {
             if exclude.is_match(&id) {
                 continue
             }
@@ -150,11 +150,11 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
             .ellipsize(EllipsizeMode::End)
             .lines(config.lines)
             .build();
-        label.get_style_context().add_class(APP_LABEL_CLASS);
+        label.style_context().add_class(APP_LABEL_CLASS);
 
         let image = ImageBuilder::new().pixel_size(config.icon_size).build();
         if let Some(icon) = app
-            .get_icon()
+            .icon()
             .and_then(|icon| icon_theme.lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE))
         {
             main_context.spawn_local(icon.load_icon_async_future().map(
@@ -165,7 +165,7 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
                 }),
             ));
         }
-        image.get_style_context().add_class(APP_ICON_CLASS);
+        image.style_context().add_class(APP_ICON_CLASS);
 
         let hbox = BoxBuilder::new()
             .orientation(Orientation::Horizontal)
@@ -175,7 +175,7 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
 
         let row = ListBoxRow::new();
         row.add(&hbox);
-        row.get_style_context().add_class(APP_ROW_CLASS);
+        row.style_context().add_class(APP_ROW_CLASS);
 
         let app_entry = AppEntry {
             display_string,
