@@ -5,23 +5,23 @@ authors = ["Dorian Rudolph"]
 edition = "2018"
 
 [dependencies]
-freedesktop_entry_parser = "1.1.0"
+freedesktop_entry_parser = "1.2.0"
 locale-types = "0.4.0"
-libc = "0.2.74"
+libc = "0.2.103"
 gtk-layer-shell = "0.2.2"
-gtk = { version = "0.14.1", features = ["v3_22"] }
-gio = "0.14.6"
-gdk = "0.14.2"
-pango = "0.14.3"
+gtk = { version = "0.14.3", features = ["v3_22"] }
+gio = { version = "0.14.8", features = ['v2_60'] }
+gdk = "0.14.3"
+pango = "0.14.8"
 gdk-pixbuf = "0.14.0"
 glib = "0.14.8"
-futures = "0.3.5"
-fuzzy-matcher = "0.3.5"
-xdg = "2.2.0"
-serde = "1.0.114"
-serde_derive = "1.0.114"
-toml = "0.5.6"
-regex = "1.4.2"
+futures = "0.3.17"
+fuzzy-matcher = "0.3.7"
+xdg = "2.3.0"
+serde = "1.0.130"
+serde_derive = "1.0.130"
+toml = "0.5.8"
+regex = "1.5.4"
 
 [profile.release]
 lto = true

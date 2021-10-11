@@ -16,10 +16,9 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use super::consts::*;
-use std::process::Command;
-use glib::{ObjectExt, GString, shell_parse_argv};
-use std::path::PathBuf;
-use gio::{AppInfo, prelude::AppInfoExt, AppInfoCreateFlags};
+use std::{process::Command, path::PathBuf};
+use glib::{ObjectExt, GString, shell_parse_argv, MainContext};
+use gio::{AppInfo, prelude::{AppInfoExt, AppInfoExtManual}, AppInfoCreateFlags};
 use gtk::{CssProvider, prelude::CssProviderExt};
 use freedesktop_entry_parser::parse_entry;
 
@@ -81,7 +80,8 @@ pub fn launch_app(info: &AppInfo) {
         }
     }
 
-    info.launch(&[], Some(&context)).expect("Error while launching terminal app");
+    let future = info.launch_uris_async_future(&[], Some(&context));
+    MainContext::default().block_on(future).expect("Error while launching app");
 }
 
 #[macro_export]
