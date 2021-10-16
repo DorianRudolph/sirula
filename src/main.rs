@@ -38,10 +38,13 @@ use app_entry::*;
 mod locale;
 use locale::*;
 
+mod history;
+use history::*;
+
 fn app_startup(application: &gtk::Application) {
     let config = Config::load();
     let cmd_prefix = config.command_prefix.clone();
-    
+
     let window = gtk::ApplicationWindow::new(application);
     window.set_size_request(config.width, config.height);
 
@@ -82,7 +85,8 @@ fn app_startup(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let entries = Rc::new(RefCell::new(load_entries(&config)));
+    let history = Rc::new(RefCell::new(History::load()));
+    let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
 
     for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
         listbox.add(row);
@@ -143,12 +147,16 @@ fn app_startup(application: &gtk::Application) {
 
     let min_score = 1;
 
-    listbox.connect_row_activated(clone!(entries, window => move |_, r| {
+    listbox.connect_row_activated(clone!(entries, window, history => move |_, r| {
         let es = entries.borrow();
         let e = &es[r];
         if e.score >= min_score {
             launch_app(&e.info);
-            store_history(es.values(), &e.display_string);
+
+            let mut history = history.borrow_mut();
+            history.update(e.info.id().unwrap().as_str());
+            history.save();
+
             window.close();
         }
     }));

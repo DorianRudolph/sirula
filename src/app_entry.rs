@@ -27,9 +27,8 @@ use gio::AppInfo;
 use glib::shell_unquote;
 use futures::prelude::*;
 use crate::locale::string_collate;
-use crate::util::load_history;
 
-use super::{clone, consts::*, Config, Field};
+use super::{clone, consts::*, Config, Field, History};
 use regex::RegexSet;
 
 #[derive(Eq)]
@@ -40,7 +39,7 @@ pub struct AppEntry {
     pub info: AppInfo,
     pub label: Label,
     pub score: i64,
-    pub usage: usize,
+    pub last_used: u64,
 }
 
 impl AppEntry {
@@ -83,14 +82,14 @@ impl AppEntry {
 
 impl PartialEq for AppEntry {
     fn eq(&self, other: &Self) -> bool {
-        self.score.eq(&other.score) && self.usage.eq(&other.usage)
+        self.score.eq(&other.score) && self.last_used.eq(&other.last_used)
     }
 }
 
 impl Ord for AppEntry {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.score.cmp(&other.score) {
-            Ordering::Equal => match self.usage.cmp(&other.usage) {
+            Ordering::Equal => match self.last_used.cmp(&other.last_used) {
                 Ordering::Equal => string_collate(&self.display_string, &other.display_string),
                 ord => ord.reverse()
             }
@@ -131,28 +130,27 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     }
 }
 
-pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
+pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
     let apps = gio::AppInfo::all();
     let main_context = glib::MainContext::default();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
-    let history = config.recent_first
-        .then(load_history).flatten()
-        .unwrap_or_else(HashMap::new);
-
     for app in apps {
         if !app.should_show() {
             continue
         }
 
-        let name = app.display_name().to_string();  
+        let name = app.display_name().to_string();
 
-        if let Some(id) = app.id().map(|s| s.to_string()) {
-            if exclude.is_match(&id) {
-                continue
-            }
+        let id = match app.id() {
+            Some(id) => id.to_string(),
+            _ => continue
+        };
+
+        if exclude.is_match(&id) {
+            continue
         }
 
         let (display_string, extra_range) = if let Some(name) 
@@ -212,7 +210,9 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
-        let usage = history.get(&display_string).cloned().unwrap_or(0);
+        let last_used = if config.recent_first {
+            history.last_used.get(&id).copied().unwrap_or_default()
+        } else { 0 };
 
         let app_entry = AppEntry {
             display_string,
@@ -221,7 +221,7 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
             info: app,
             label,
             score: 100,
-            usage,
+            last_used,
         };
         app_entry.set_markup(config);
         entries.insert(row, app_entry);

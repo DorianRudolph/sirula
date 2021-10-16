@@ -50,7 +50,7 @@ make_config!(Config {
     markup_highlight: Vec<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
     markup_extra: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_extra" [deserialize_with = "deserialize_markup"],
     exclusive: bool = (true) "exclusive",
-    recent_first: bool = (false) "recent_first",
+    recent_first: bool = (true) "recent_first",
     icon_size: i32 = (64) "icon_size",
     lines: i32 = (2) "lines",
     margin_left: i32 = (0) "margin_left",
