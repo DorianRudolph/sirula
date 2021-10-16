@@ -15,16 +15,33 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::consts::*;
-use std::{process::Command, path::PathBuf};
+use crate::consts::*;
+use crate::app_entry::AppEntry;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{Write, BufRead, BufReader, BufWriter};
+use std::process::Command;
 use glib::{ObjectExt, GString, shell_parse_argv, MainContext};
+use std::path::PathBuf;
 use gio::{AppInfo, prelude::{AppInfoExt, AppInfoExtManual}, AppInfoCreateFlags};
 use gtk::{CssProvider, prelude::CssProviderExt};
 use freedesktop_entry_parser::parse_entry;
 
+pub fn get_xdg_dirs() -> xdg::BaseDirectories {
+    xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
+}
+
 pub fn get_config_file(file: &str) -> Option<PathBuf> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME).unwrap();
-    xdg_dirs.find_config_file(file)
+    get_xdg_dirs().find_config_file(file)
+}
+
+pub fn get_history_file(place: bool) -> Option<PathBuf>  {
+    let xdg = get_xdg_dirs();
+    if place {
+        xdg.place_cache_file(HISTORY_FILE).ok()
+    } else {
+        xdg.find_cache_file(HISTORY_FILE)
+    }
 }
 
 pub fn load_css() {
@@ -39,6 +56,20 @@ pub fn load_css() {
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );    
     }
+}
+
+pub fn load_history() -> Option<HashMap<String, usize>> {
+    let mut file = BufReader::new(File::open(&get_history_file(false)?).ok()?);
+    let (mut line, mut history) = (String::new(), HashMap::new());
+    while file.read_line(&mut line).ok()? > 0 {
+        if let Some((num, name)) = line.split_once(' ') {
+            if let Ok(num) = num.parse::<usize>() {
+                history.insert(name.trim_end().into(), num);
+            }
+        }
+        line.clear()
+    }
+    Some(history)
 }
 
 pub fn is_cmd(text: &str, cmd_prefix: &str) -> bool {
@@ -82,6 +113,21 @@ pub fn launch_app(info: &AppInfo) {
 
     let future = info.launch_uris_async_future(&[], Some(&context));
     MainContext::default().block_on(future).expect("Error while launching app");
+}
+
+pub fn store_history<'a, I>(entries: I, current: &str)
+where I: Iterator<Item=&'a AppEntry> {
+    let file = get_history_file(true).expect("Cannot create history file or cache directory");
+    let file = File::create(file).expect("Cannot open history file for writing");
+    let mut file = BufWriter::new(file);
+
+    let write_error = "Cannot write to history file";
+    entries
+        .map(|e| (&e.display_string[..], e.usage + (e.display_string == current) as usize))
+        .filter(|(_, u)| *u != 0)
+        .for_each(|(n, u)| write!(&mut file, "{} {}\n", u, n).expect(write_error));
+
+    file.flush().expect(write_error)
 }
 
 #[macro_export]

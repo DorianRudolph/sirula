@@ -18,6 +18,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use pango::{Attribute, EllipsizeMode, AttrList};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use gtk::{IconTheme, ListBoxRow, Label, prelude::*, BoxBuilder, IconLookupFlags, ImageBuilder,
     Orientation};
@@ -25,9 +26,13 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::AppInfo;
 use glib::shell_unquote;
 use futures::prelude::*;
+use crate::locale::string_collate;
+use crate::util::load_history;
+
 use super::{clone, consts::*, Config, Field};
 use regex::RegexSet;
 
+#[derive(Eq)]
 pub struct AppEntry {
     pub display_string: String,
     pub search_string: String,
@@ -35,6 +40,7 @@ pub struct AppEntry {
     pub info: AppInfo,
     pub label: Label,
     pub score: i64,
+    pub usage: usize,
 }
 
 impl AppEntry {
@@ -56,6 +62,7 @@ impl AppEntry {
         } else {
             0
         };
+
         self.label.set_attributes(Some(&attr_list));
     }
 
@@ -71,6 +78,30 @@ impl AppEntry {
             add_attrs(&attr_list, &config.markup_extra, lo, hi);   
         }
         self.label.set_attributes(Some(&attr_list));
+    }
+}
+
+impl PartialEq for AppEntry {
+    fn eq(&self, other: &Self) -> bool {
+        self.score.eq(&other.score) && self.usage.eq(&other.usage)
+    }
+}
+
+impl Ord for AppEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.score.cmp(&other.score) {
+            Ordering::Equal => match self.usage.cmp(&other.usage) {
+                Ordering::Equal => string_collate(&self.display_string, &other.display_string),
+                ord => ord.reverse()
+            }
+            ord => ord.reverse()
+        }
+    }
+}
+
+impl PartialOrd for AppEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -106,6 +137,10 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
     let apps = gio::AppInfo::all();
     let main_context = glib::MainContext::default();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
+
+    let history = config.recent_first
+        .then(load_history).flatten()
+        .unwrap_or_else(HashMap::new);
 
     for app in apps {
         if !app.should_show() {
@@ -177,6 +212,8 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
+        let usage = history.get(&display_string).cloned().unwrap_or(0);
+
         let app_entry = AppEntry {
             display_string,
             search_string,
@@ -184,9 +221,10 @@ pub fn load_entries(config: &Config) -> HashMap<ListBoxRow, AppEntry> {
             info: app,
             label,
             score: 100,
+            usage,
         };
         app_entry.set_markup(config);
-        entries.insert(row,app_entry);
+        entries.insert(row, app_entry);
     }
     entries
 }

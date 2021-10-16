@@ -17,7 +17,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use libc::LC_ALL;
 use gdk::keys::constants;
-use gio::{prelude::*};
+use gio::prelude::*;
 use gtk::{prelude::*, ListBoxRow};
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -148,6 +148,7 @@ fn app_startup(application: &gtk::Application) {
         let e = &es[r];
         if e.score >= min_score {
             launch_app(&e.info);
+            store_history(es.values(), &e.display_string);
             window.close();
         }
     }));
@@ -159,13 +160,7 @@ fn app_startup(application: &gtk::Application) {
 
     listbox.set_sort_func(Some(Box::new(clone!(entries => move |a, b| {
         let e = entries.borrow();
-        let ea = &e[a];
-        let eb = &e[b];
-        (if ea.score == eb.score {
-            string_collate(&e[a].display_string, &e[b].display_string)
-        } else {
-            eb.score.cmp(&ea.score)
-        }) as i32
+        e[a].cmp(&e[b]) as i32
     }))));
 
     listbox.select_row(listbox.row_at_index(0).as_ref());
