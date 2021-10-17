@@ -7,7 +7,7 @@ use std::fs::File;
 
 #[derive(Deserialize, Serialize)]
 pub struct History {
-    pub last_used : HashMap<String, u64>
+    pub last_used: HashMap<String, u64>
 }
 
 impl History {
@@ -17,7 +17,7 @@ impl History {
                 let config_str = std::fs::read_to_string(file).expect("Cannot read history file");
                 toml::from_str(&config_str).expect("Cannot parse config: {}")
             },
-            _ => History { last_used : HashMap::new() }
+            _ => History { last_used: HashMap::new() }
         }
     }
 

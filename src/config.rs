@@ -68,7 +68,8 @@ make_config!(Config {
     name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
     command_prefix: String = (":".into()) "command_prefix",
-    exclude: Vec<String> = (Vec::new()) "exclude"
+    exclude: Vec<String> = (Vec::new()) "exclude",
+    term_command: Option<String> = (None) "term_command"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>

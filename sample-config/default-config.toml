@@ -43,6 +43,8 @@ command_prefix = ":"
 
 recent_first = true # sort matches of equal quality by most recently used
 
+# term_command = "alacritty -e {}" # command for applications run in terminal (default uses "$TERMINAL -e")
+
 # specify name overrides (id is the name of the desktop file)
 [name_overrides]
-# id = "name\rextra"hide_extra_if_contained
+# id = "name\rextra"

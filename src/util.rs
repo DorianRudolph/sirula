@@ -22,6 +22,8 @@ use std::path::PathBuf;
 use gio::{AppInfo, prelude::{AppInfoExt, AppInfoExtManual}, AppInfoCreateFlags};
 use gtk::{CssProvider, prelude::CssProviderExt};
 use freedesktop_entry_parser::parse_entry;
+use osstrtools::OsStrTools;
+use std::ffi::OsStr;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -69,32 +71,36 @@ pub fn launch_cmd(cmd_line: &str) {
     child.spawn().expect("Error spawning command");
 }
 
-pub fn launch_app(info: &AppInfo) {
+pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
     let context = gdk::Display::default().unwrap().app_launch_context().unwrap();
 
-    // launch terminal applications ourselves because GTK ignores the TERMINAL environment variable
-    if let Some(term) = std::env::var_os("TERMINAL") {
-        let use_terminal = info.property("filename").ok().and_then(|p| p.get::<GString>().ok())
-            .and_then(|s| parse_entry(s.to_string()).ok())
-            .and_then(|e| e.section("Desktop Entry").attr("Terminal").map(|t| t == "1" || t == "true"))
-            .unwrap_or(false);
-        if use_terminal {
-            let command = match info.commandline() {
-                Some(c) => c,
-                _ => info.executable()
-            };
-            let mut cmd_line = term;
-            cmd_line.push(" -e ");
-            cmd_line.push(command);
-            if let Ok(info) = AppInfo::create_from_commandline(cmd_line, None, AppInfoCreateFlags::NONE) {
-                info.launch(&[], Some(&context)).expect("Error while launching terminal app");
-                return;
-            }
-        }
-    }
+    if info.property("filename").ok().and_then(|p| p.get::<GString>().ok())
+        .and_then(|s| parse_entry(s.to_string()).ok())
+        .and_then(|e| e.section("Desktop Entry").attr("Terminal").map(|t| t == "1" || t == "true"))
+        .unwrap_or_default() {
 
-    let future = info.launch_uris_async_future(&[], Some(&context));
-    MainContext::default().block_on(future).expect("Error while launching app");
+        let command = (match info.commandline() {
+            Some(c) => c,
+            _ => info.executable()
+        }).as_os_str().quote_single();
+
+        let commandline = if let Some(term) = term_command {
+            OsStr::new(term).replace("{}", command)
+        } else if let Some(mut term) = std::env::var_os("TERMINAL") {
+            term.push(" -e ");
+            term.push(command);
+            term
+        } else {
+            return;
+        };
+
+        let info = AppInfo::create_from_commandline(commandline, None, AppInfoCreateFlags::NONE)
+            .expect("Failed to create AppInfo from commandline");
+        info.launch(&[], Some(&context)).expect("Error while launching terminal app");
+    } else {
+        let future = info.launch_uris_async_future(&[], Some(&context));
+        MainContext::default().block_on(future).expect("Error while launching app");
+    }
 }
 
 #[macro_export]

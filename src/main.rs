@@ -116,6 +116,7 @@ fn app_startup(application: &gtk::Application) {
     }));
 
     let matcher = SkimMatcherV2::default();
+    let term_command = config.term_command.clone();
     entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
         let text = e.text();
         let is_cmd = is_cmd(&text, &cmd_prefix);
@@ -151,7 +152,7 @@ fn app_startup(application: &gtk::Application) {
         let es = entries.borrow();
         let e = &es[r];
         if e.score >= min_score {
-            launch_app(&e.info);
+            launch_app(&e.info, term_command.as_deref());
 
             let mut history = history.borrow_mut();
             history.update(e.info.id().unwrap().as_str());

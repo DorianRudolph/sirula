@@ -23,6 +23,7 @@ I'd be happy to hear any criticism of my code.
 - Build: `cargo build --release`
   - Optionally, `strip` the binary to reduce size
 - Alternatively, install with `cargo install --path .`
+- There is also an unofficial [AUR package](https://aur.archlinux.org/packages/sirula-git/)
 
 ## Configuration
 
