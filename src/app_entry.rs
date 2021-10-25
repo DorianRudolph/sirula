@@ -25,10 +25,9 @@ use gtk::{IconTheme, ListBoxRow, Label, prelude::*, BoxBuilder, IconLookupFlags,
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::AppInfo;
 use glib::shell_unquote;
-use futures::prelude::*;
 use crate::locale::string_collate;
 
-use super::{clone, consts::*, Config, Field, History};
+use super::{consts::*, Config, Field, History};
 use regex::RegexSet;
 
 #[derive(Eq)]
@@ -134,7 +133,6 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
     let apps = gio::AppInfo::all();
-    let main_context = glib::MainContext::default();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
     for app in apps {
@@ -186,17 +184,11 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
         label.style_context().add_class(APP_LABEL_CLASS);
 
         let image = ImageBuilder::new().pixel_size(config.icon_size).build();
-        if let Some(icon) = app
-            .icon()
-            .and_then(|icon| icon_theme.lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE))
-        {
-            main_context.spawn_local(icon.load_icon_async_future().map(
-                clone!(image => move |pb| {
-                    if let Ok(pb) = pb {
-                        image.set_from_pixbuf(Some(&pb));
-                    }
-                }),
-            ));
+        if let Some(icon) = app.icon() {
+            // Don't set the icon if it'd give us an ugly fallback icon
+            if icon_theme.lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE).is_some() {
+                image.set_from_gicon(&icon, gtk::IconSize::Menu);
+            }
         }
         image.style_context().add_class(APP_ICON_CLASS);
 
