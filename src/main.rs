@@ -15,13 +15,14 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use libc::LC_ALL;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
-use gio::prelude::*;
+use gio::{prelude::*, ApplicationFlags};
 use gtk::{prelude::*, ListBoxRow};
+use libc::LC_ALL;
+
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-use fuzzy_matcher::skim::SkimMatcherV2;
 
 mod consts;
 use consts::*;
@@ -41,8 +42,7 @@ use locale::*;
 mod history;
 use history::*;
 
-fn app_startup(application: &gtk::Application) {
-    let config = Config::load();
+fn app_startup(application: &gtk::Application, config: Config) {
     let cmd_prefix = config.command_prefix.clone();
 
     let window = gtk::ApplicationWindow::new(application);
@@ -181,11 +181,20 @@ fn app_startup(application: &gtk::Application) {
 fn main() {
     set_locale(LC_ALL, "");
 
-    let application = gtk::Application::new(Some(APP_ID), Default::default());
+    let config = Config::load();
 
-    application.connect_startup(|app| {
+    let application = gtk::Application::new(
+        Some(APP_ID),
+        if config.send_environment {
+            ApplicationFlags::SEND_ENVIRONMENT
+        } else {
+            ApplicationFlags::empty() // Equivalent to Default::default()
+        },
+    );
+
+    application.connect_startup(move |app| {
         load_css();
-        app_startup(app);
+        app_startup(app, config.clone());
     });
 
     application.connect_activate(|_| {

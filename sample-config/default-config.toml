@@ -45,6 +45,9 @@ recent_first = true # sort matches of equal quality by most recently used
 
 # term_command = "alacritty -e {}" # command for applications run in terminal (default uses "$TERMINAL -e")
 
+# send environment variables to the launched app
+send_environment = false
+
 # specify name overrides (id is the name of the desktop file)
 [name_overrides]
 # id = "name\rextra"
