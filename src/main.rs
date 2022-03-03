@@ -118,7 +118,7 @@ fn app_startup(application: &gtk::Application) {
     let matcher = SkimMatcherV2::default();
     let term_command = config.term_command.clone();
     entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
-        let text = e.text();
+        let text = e.text().to_lowercase();
         let is_cmd = is_cmd(&text, &cmd_prefix);
         {
             let mut entries = entries.borrow_mut();
