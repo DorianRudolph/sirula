@@ -15,13 +15,13 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use libc::LC_ALL;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
 use gio::prelude::*;
 use gtk::{prelude::*, ListBoxRow};
+use libc::LC_ALL;
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-use fuzzy_matcher::skim::SkimMatcherV2;
 
 mod consts;
 use consts::*;
@@ -88,7 +88,7 @@ fn app_startup(application: &gtk::Application) {
     let history = Rc::new(RefCell::new(History::load()));
     let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
 
-    for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
+    for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
         listbox.add(row);
     }
 
@@ -101,7 +101,7 @@ fn app_startup(application: &gtk::Application) {
                 true
             },
             Down | Tab if entry.has_focus() => {
-                listbox.row_at_index(1).map(|row| listbox.select_row(Some(&row)));
+                if let Some(row) = listbox.row_at_index(1) { listbox.select_row(Some(&row)) };
                 false
             },
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R

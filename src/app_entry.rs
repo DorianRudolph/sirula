@@ -17,15 +17,17 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use pango::{Attribute, EllipsizeMode, AttrList};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use gtk::{IconTheme, ListBoxRow, Label, prelude::*, BoxBuilder, IconLookupFlags, ImageBuilder,
-    Orientation};
+use crate::locale::string_collate;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::AppInfo;
 use glib::shell_unquote;
-use crate::locale::string_collate;
+use gtk::{
+    prelude::*, BoxBuilder, IconLookupFlags, IconTheme, ImageBuilder, Label, ListBoxRow,
+    Orientation,
+};
+use pango::{AttrList, Attribute, EllipsizeMode};
+use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use super::{consts::*, Config, Field, History};
 use regex::RegexSet;
@@ -45,7 +47,7 @@ impl AppEntry {
     pub fn update_match(&mut self, pattern: &str, matcher: &SkimMatcherV2, config: &Config) {
         self.set_markup(config);
 
-        let attr_list = self.label.attributes().unwrap_or(AttrList::new());
+        let attr_list = self.label.attributes().unwrap_or_default();
         self.score = if pattern.is_empty() {
             self.label.set_attributes(None);
             100
@@ -53,7 +55,7 @@ impl AppEntry {
             for i in indices {
                 if i < self.display_string.len() {
                     let i = i as u32;
-                    add_attrs(&attr_list, &config.markup_highlight, i,  i + 1);
+                    add_attrs(&attr_list, &config.markup_highlight, i, i + 1);
                 }
             }
             score
@@ -71,9 +73,14 @@ impl AppEntry {
     fn set_markup(&self, config: &Config) {
         let attr_list = AttrList::new();
 
-        add_attrs(&attr_list, &config.markup_default, 0, self.display_string.len() as u32);
+        add_attrs(
+            &attr_list,
+            &config.markup_default,
+            0,
+            self.display_string.len() as u32,
+        );
         if let Some((lo, hi)) = self.extra_range {
-            add_attrs(&attr_list, &config.markup_extra, lo, hi);   
+            add_attrs(&attr_list, &config.markup_extra, lo, hi);
         }
         self.label.set_attributes(Some(&attr_list));
     }
@@ -90,9 +97,9 @@ impl Ord for AppEntry {
         match self.score.cmp(&other.score) {
             Ordering::Equal => match self.last_used.cmp(&other.last_used) {
                 Ordering::Equal => string_collate(&self.display_string, &other.display_string),
-                ord => ord.reverse()
-            }
-            ord => ord.reverse()
+                ord => ord.reverse(),
+            },
+            ord => ord.reverse(),
         }
     }
 }
@@ -106,21 +113,25 @@ impl PartialOrd for AppEntry {
 fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
     match field {
         Field::Comment => app.description().map(Into::into),
-        Field::Id => app.id().and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
+        Field::Id => app
+            .id()
+            .and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
         Field::IdSuffix => app.id().and_then(|id| {
             let id = id.to_string();
-            let parts : Vec<&str> = id.split('.').collect();
-            parts.get(parts.len()-2).map(|s| s.to_string())
+            let parts: Vec<&str> = id.split('.').collect();
+            parts.get(parts.len() - 2).map(|s| s.to_string())
         }),
-        Field::Executable => app.executable().file_name()
+        Field::Executable => app
+            .executable()
+            .file_name()
             .and_then(|e| shell_unquote(e).ok())
             .map(|s| s.to_string_lossy().to_string()),
         //TODO: clean up command line from %
-        Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()) 
+        Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()),
     }
 }
 
-fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
+fn add_attrs(list: &AttrList, attrs: &[Attribute], start: u32, end: u32) {
     for attr in attrs {
         let mut attr = attr.clone();
         attr.set_start_index(start);
@@ -137,37 +148,57 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
 
     for app in apps {
         if !app.should_show() {
-            continue
+            continue;
         }
 
         let name = app.display_name().to_string();
 
         let id = match app.id() {
             Some(id) => id.to_string(),
-            _ => continue
+            _ => continue,
         };
 
         if exclude.is_match(&id) {
-            continue
+            continue;
         }
 
-        let (display_string, extra_range) = if let Some(name) 
-                = get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id)) {
+        let (display_string, extra_range) = if let Some(name) =
+            get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id))
+        {
             let i = name.find('\r');
-            (name.replace('\r', " "), i.map(|i| (i as u32 +1, name.len() as u32)))
+            (
+                name.replace('\r', " "),
+                i.map(|i| (i as u32 + 1, name.len() as u32)),
+            )
         } else {
-            let extra = config.extra_field.get(0).and_then(|f| get_app_field(&app, *f));
+            let extra = config
+                .extra_field
+                .get(0)
+                .and_then(|f| get_app_field(&app, *f));
             match extra {
-                Some(e) if (!config.hide_extra_if_contained || !name.to_lowercase().contains(&e.to_lowercase())) => (format!("{} {}", name, e), 
-                    Some((name.len() as u32 + 1, name.len() as u32 + 1 + e.len() as u32))),
-                _ => (name, None)
+                Some(e)
+                    if (!config.hide_extra_if_contained
+                        || !name.to_lowercase().contains(&e.to_lowercase())) =>
+                {
+                    (
+                        format!("{} {}", name, e),
+                        Some((
+                            name.len() as u32 + 1,
+                            name.len() as u32 + 1 + e.len() as u32,
+                        )),
+                    )
+                }
+                _ => (name, None),
             }
         };
 
-        let hidden = config.hidden_fields.iter()
+        let hidden = config
+            .hidden_fields
+            .iter()
             .map(|f| get_app_field(&app, *f).unwrap_or_default())
-            .collect::<Vec<String>>().join(" ");
-        
+            .collect::<Vec<String>>()
+            .join(" ");
+
         let search_string = if hidden.is_empty() {
             display_string.clone()
         } else {
@@ -186,7 +217,10 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
         let image = ImageBuilder::new().pixel_size(config.icon_size).build();
         if let Some(icon) = app.icon() {
             // Don't set the icon if it'd give us an ugly fallback icon
-            if icon_theme.lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE).is_some() {
+            if icon_theme
+                .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
+                .is_some()
+            {
                 image.set_from_gicon(&icon, gtk::IconSize::Menu);
             }
         }
@@ -204,7 +238,9 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
 
         let last_used = if config.recent_first {
             history.last_used.get(&id).copied().unwrap_or_default()
-        } else { 0 };
+        } else {
+            0
+        };
 
         let app_entry = AppEntry {
             display_string,
