@@ -27,7 +27,7 @@ use gio::AppInfo;
 use glib::shell_unquote;
 use crate::locale::string_collate;
 
-use super::{consts::*, Config, Field, History};
+use super::{consts::*, Config, Field, HistoryData};
 use regex::RegexSet;
 
 #[derive(Eq)]
@@ -38,7 +38,7 @@ pub struct AppEntry {
     pub info: AppInfo,
     pub label: Label,
     pub score: i64,
-    pub last_used: u64,
+    pub history: HistoryData
 }
 
 impl AppEntry {
@@ -73,7 +73,7 @@ impl AppEntry {
 
         add_attrs(&attr_list, &config.markup_default, 0, self.display_string.len() as u32);
         if let Some((lo, hi)) = self.extra_range {
-            add_attrs(&attr_list, &config.markup_extra, lo, hi);   
+            add_attrs(&attr_list, &config.markup_extra, lo, hi);
         }
         self.label.set_attributes(Some(&attr_list));
     }
@@ -81,15 +81,18 @@ impl AppEntry {
 
 impl PartialEq for AppEntry {
     fn eq(&self, other: &Self) -> bool {
-        self.score.eq(&other.score) && self.last_used.eq(&other.last_used)
+        self.score.eq(&other.score) && self.history.eq(&other.history)
     }
 }
 
 impl Ord for AppEntry {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.score.cmp(&other.score) {
-            Ordering::Equal => match self.last_used.cmp(&other.last_used) {
-                Ordering::Equal => string_collate(&self.display_string, &other.display_string),
+            Ordering::Equal => match self.history.usage_count.cmp(&other.history.usage_count) {
+                Ordering::Equal => match self.history.last_used.cmp(&other.history.last_used) {
+                    Ordering::Equal => string_collate(&self.display_string, &other.display_string),
+                    ord => ord.reverse()
+                }
                 ord => ord.reverse()
             }
             ord => ord.reverse()
@@ -129,7 +132,8 @@ fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
     }
 }
 
-pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, AppEntry> {
+pub fn load_entries(config: &Config, history: &HashMap<String, HistoryData>)
+  -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
     let apps = gio::AppInfo::all();
@@ -151,14 +155,14 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
             continue
         }
 
-        let (display_string, extra_range) = if let Some(name) 
+        let (display_string, extra_range) = if let Some(name)
                 = get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id)) {
             let i = name.find('\r');
             (name.replace('\r', " "), i.map(|i| (i as u32 +1, name.len() as u32)))
         } else {
             let extra = config.extra_field.get(0).and_then(|f| get_app_field(&app, *f));
             match extra {
-                Some(e) if (!config.hide_extra_if_contained || !name.to_lowercase().contains(&e.to_lowercase())) => (format!("{} {}", name, e), 
+                Some(e) if (!config.hide_extra_if_contained || !name.to_lowercase().contains(&e.to_lowercase())) => (format!("{} {}", name, e),
                     Some((name.len() as u32 + 1, name.len() as u32 + 1 + e.len() as u32))),
                 _ => (name, None)
             }
@@ -202,9 +206,9 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
-        let last_used = if config.recent_first {
-            history.last_used.get(&id).copied().unwrap_or_default()
-        } else { 0 };
+        let history_data = history.get(&id).copied().unwrap_or_default();
+        let last_used = if config.recent_first { history_data.last_used } else { 0 };
+        let usage_count = if config.frequent_first { history_data.usage_count } else { 0 };
 
         let app_entry = AppEntry {
             display_string,
@@ -213,7 +217,7 @@ pub fn load_entries(config: &Config, history: &History) -> HashMap<ListBoxRow, A
             info: app,
             label,
             score: 100,
-            last_used,
+            history: HistoryData { last_used, usage_count }
         };
         app_entry.set_markup(config);
         entries.insert(row, app_entry);

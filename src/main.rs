@@ -85,7 +85,7 @@ fn app_startup(application: &gtk::Application) {
     let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let history = Rc::new(RefCell::new(History::load()));
+    let history = Rc::new(RefCell::new(load_history()));
     let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
 
     for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
@@ -155,8 +155,8 @@ fn app_startup(application: &gtk::Application) {
             launch_app(&e.info, term_command.as_deref());
 
             let mut history = history.borrow_mut();
-            history.update(e.info.id().unwrap().as_str());
-            history.save();
+            update_history(&mut history, e.info.id().unwrap().as_str());
+            save_history(&history);
 
             window.close();
         }
