@@ -68,6 +68,10 @@ impl AppEntry {
         self.score = 0;
     }
 
+    pub fn hidden(&self) -> bool {
+        return 0 == self.score;
+    }
+
     fn set_markup(&self, config: &Config) {
         let attr_list = AttrList::new();
 
