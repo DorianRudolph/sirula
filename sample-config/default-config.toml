@@ -41,7 +41,7 @@ exclude = [] # list of regexes for excluded app ids (name of the .desktop file)
 # use "" to disable launching commands
 command_prefix = ":"
 
-frequent_first = true # sort matches of equal quality by most frequently used
+frequent_first = false # sort matches of equal quality by most frequently used
 recent_first = true # sort matches of equal quality by most recently used
 # when both frequent_first and recent_first are set,
 # sorting is by frequency first, and recency is used to break ties in frequency
