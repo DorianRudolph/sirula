@@ -15,13 +15,13 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use libc::LC_ALL;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
 use gio::prelude::*;
 use gtk::{prelude::*, ListBoxRow};
+use libc::LC_ALL;
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-use fuzzy_matcher::skim::SkimMatcherV2;
 
 mod consts;
 use consts::*;
@@ -88,7 +88,7 @@ fn app_startup(application: &gtk::Application) {
     let history = Rc::new(RefCell::new(load_history()));
     let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
 
-    for (row, _) in &entries.borrow() as &HashMap<ListBoxRow, AppEntry> {
+    for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
         listbox.add(row);
     }
 
@@ -101,24 +101,22 @@ fn app_startup(application: &gtk::Application) {
                 true
             },
             Down | Tab if entry.has_focus() => {
-                listbox.row_at_index(0).map(|r0| {
+                if let Some(r0) = listbox.row_at_index(0) {
                     let es = entries.borrow();
                     if r0.is_selected() {
-                        listbox.row_at_index(1).map(|r1| {
-                            es.get(&r1).map(|app_entry| {
+                        if let Some(r1) = listbox.row_at_index(1) {
+                            if let Some(app_entry) = es.get(&r1) {
                                 if !app_entry.hidden() {
                                     listbox.select_row(Some(&r1));
                                 }
-                            });
-                        });
-                    } else {
-                        es.get(&r0).map(|app_entry| {
-                            if !app_entry.hidden() {
-                                listbox.select_row(Some(&r0));
                             }
-                        });
+                        }
+                    } else if let Some(app_entry) = es.get(&r0) {
+                        if !app_entry.hidden() {
+                            listbox.select_row(Some(&r0));
+                        }
                     }
-                });
+                }
                 false
             },
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R

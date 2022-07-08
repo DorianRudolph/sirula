@@ -15,11 +15,11 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use serde_derive::Deserialize;
-use serde::{de::Error, Deserializer};
 use super::consts::*;
 use super::util::get_config_file;
 use pango::Attribute;
+use serde::{de::Error, Deserializer};
+use serde_derive::Deserialize;
 use std::collections::HashMap;
 
 macro_rules! make_config {
@@ -85,7 +85,7 @@ impl Config {
     pub fn load() -> Config {
         let config_str = match get_config_file(CONFIG_FILE) {
             Some(file) => std::fs::read_to_string(file).expect("Cannot read config"),
-            _ => "".to_owned()
+            _ => "".to_owned(),
         };
         let config: Config = toml::from_str(&config_str).expect("Cannot parse config: {}");
         config
@@ -95,6 +95,6 @@ impl Config {
 fn parse_attributes(markup: &str) -> Result<Vec<Attribute>, String> {
     let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0')
         .map_err(|err| format!("Failed to parse markup: {}", err))?;
-    let mut iter = attributes.iterator().ok_or_else(||"Failed to parse markup")?;
+    let mut iter = attributes.iterator().ok_or("Failed to parse markup")?;
     Ok(iter.attrs())
 }

@@ -16,14 +16,17 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use crate::consts::*;
-use std::process::Command;
-use glib::{ObjectExt, GString, shell_parse_argv, MainContext};
-use std::path::PathBuf;
-use gio::{AppInfo, prelude::{AppInfoExt, AppInfoExtManual}, AppInfoCreateFlags};
-use gtk::{CssProvider, prelude::CssProviderExt};
 use freedesktop_entry_parser::parse_entry;
+use gio::{
+    prelude::{AppInfoExt, AppInfoExtManual},
+    AppInfo, AppInfoCreateFlags,
+};
+use glib::{shell_parse_argv, GString, MainContext, ObjectExt};
+use gtk::{prelude::CssProviderExt, CssProvider};
 use osstrtools::OsStrTools;
 use std::ffi::OsStr;
+use std::path::PathBuf;
+use std::process::Command;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -33,7 +36,7 @@ pub fn get_config_file(file: &str) -> Option<PathBuf> {
     get_xdg_dirs().find_config_file(file)
 }
 
-pub fn get_history_file(place: bool) -> Option<PathBuf>  {
+pub fn get_history_file(place: bool) -> Option<PathBuf> {
     let xdg = get_xdg_dirs();
     if place {
         xdg.place_cache_file(HISTORY_FILE).ok()
@@ -52,7 +55,7 @@ pub fn load_css() {
             &gdk::Screen::default().expect("Error initializing gtk css provider."),
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );    
+        );
     }
 }
 
@@ -72,17 +75,29 @@ pub fn launch_cmd(cmd_line: &str) {
 }
 
 pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
-    let context = gdk::Display::default().unwrap().app_launch_context().unwrap();
+    let context = gdk::Display::default()
+        .unwrap()
+        .app_launch_context()
+        .unwrap();
 
-    if info.property("filename").ok().and_then(|p| p.get::<GString>().ok())
+    if info
+        .property("filename")
+        .ok()
+        .and_then(|p| p.get::<GString>().ok())
         .and_then(|s| parse_entry(s.to_string()).ok())
-        .and_then(|e| e.section("Desktop Entry").attr("Terminal").map(|t| t == "1" || t == "true"))
-        .unwrap_or_default() {
-
+        .and_then(|e| {
+            e.section("Desktop Entry")
+                .attr("Terminal")
+                .map(|t| t == "1" || t == "true")
+        })
+        .unwrap_or_default()
+    {
         let command = (match info.commandline() {
             Some(c) => c,
-            _ => info.executable()
-        }).as_os_str().quote_single();
+            _ => info.executable(),
+        })
+        .as_os_str()
+        .quote_single();
 
         let commandline = if let Some(term) = term_command {
             OsStr::new(term).replace("{}", command)
@@ -96,10 +111,13 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
 
         let info = AppInfo::create_from_commandline(commandline, None, AppInfoCreateFlags::NONE)
             .expect("Failed to create AppInfo from commandline");
-        info.launch(&[], Some(&context)).expect("Error while launching terminal app");
+        info.launch(&[], Some(&context))
+            .expect("Error while launching terminal app");
     } else {
         let future = info.launch_uris_async_future(&[], Some(&context));
-        MainContext::default().block_on(future).expect("Error while launching app");
+        MainContext::default()
+            .block_on(future)
+            .expect("Error while launching app");
     }
 }
 
