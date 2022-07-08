@@ -22,8 +22,9 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::AppInfo;
 use glib::shell_unquote;
 use gtk::{
-    prelude::*, BoxBuilder, IconLookupFlags, IconTheme, ImageBuilder, Label, ListBoxRow,
-    Orientation,
+    builders::{BoxBuilder, ImageBuilder, LabelBuilder},
+    prelude::*,
+    IconLookupFlags, IconTheme, Label, ListBoxRow, Orientation,
 };
 use pango::{AttrList, Attribute, EllipsizeMode};
 use std::cmp::Ordering;
@@ -215,7 +216,7 @@ pub fn load_entries(
             format!("{} {}", display_string, hidden)
         };
 
-        let label = gtk::LabelBuilder::new()
+        let label = LabelBuilder::new()
             .xalign(0.0f32)
             .label(&display_string)
             .wrap(true)

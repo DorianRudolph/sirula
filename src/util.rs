@@ -17,10 +17,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
-use gio::{
-    prelude::{AppInfoExt, AppInfoExtManual},
-    AppInfo, AppInfoCreateFlags,
-};
+use gio::{prelude::{AppInfoExt, AppInfoExtManual}, AppInfo, AppInfoCreateFlags};
 use glib::{shell_parse_argv, GString, MainContext, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
 use osstrtools::OsStrTools;
@@ -81,10 +78,9 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         .unwrap();
 
     if info
-        .property("filename")
+        .try_property::<GString>("filename")
         .ok()
-        .and_then(|p| p.get::<GString>().ok())
-        .and_then(|s| parse_entry(s.to_string()).ok())
+        .and_then(|s| parse_entry(&s).ok())
         .and_then(|e| {
             e.section("Desktop Entry")
                 .attr("Terminal")
@@ -114,7 +110,7 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         info.launch(&[], Some(&context))
             .expect("Error while launching terminal app");
     } else {
-        let future = info.launch_uris_async_future(&[], Some(&context));
+        let future = info.launch_uris_future(&[], Some(&context));
         MainContext::default()
             .block_on(future)
             .expect("Error while launching app");

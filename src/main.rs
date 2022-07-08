@@ -18,7 +18,11 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
 use gio::prelude::*;
-use gtk::{prelude::*, ListBoxRow};
+use gtk::{
+    builders::{BoxBuilder, EntryBuilder, ListBoxBuilder, ScrolledWindowBuilder},
+    prelude::*,
+    ListBoxRow,
+};
 use libc::LC_ALL;
 use std::env::args;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -69,20 +73,20 @@ fn app_startup(application: &gtk::Application) {
     window.set_decorated(false);
     window.set_app_paintable(true);
 
-    let vbox = gtk::BoxBuilder::new()
+    let vbox = BoxBuilder::new()
         .name(ROOT_BOX_NAME)
         .orientation(gtk::Orientation::Vertical)
         .build();
-    let entry = gtk::EntryBuilder::new().name(SEARCH_ENTRY_NAME).build(); // .width_request(300)
+    let entry = EntryBuilder::new().name(SEARCH_ENTRY_NAME).build(); // .width_request(300)
     vbox.pack_start(&entry, false, false, 0);
 
-    let scroll = gtk::ScrolledWindowBuilder::new()
+    let scroll = ScrolledWindowBuilder::new()
         .name(SCROLL_NAME)
         .hscrollbar_policy(gtk::PolicyType::Never)
         .build();
     vbox.pack_end(&scroll, true, true, 0);
 
-    let listbox = gtk::ListBoxBuilder::new().name(LISTBOX_NAME).build();
+    let listbox = ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
     let history = Rc::new(RefCell::new(load_history()));
