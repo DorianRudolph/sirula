@@ -20,8 +20,11 @@ impl PartialEq for HistoryData {
 pub fn load_history() -> HashMap<String, HistoryData> {
     match get_history_file(false) {
         Some(file) => {
-            let config_str = std::fs::read_to_string(file).expect("Cannot read history file");
-            toml::from_str(&config_str).expect("Cannot parse config: {}")
+            let history_str = std::fs::read_to_string(file).expect("Cannot read history file");
+            toml::from_str(&history_str).unwrap_or_else(|err| {
+                eprintln!("Cannot parse history file: {}", err);
+                HashMap::new()
+            })
         },
         _ => HashMap::new()
     }
