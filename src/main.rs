@@ -92,7 +92,7 @@ fn app_startup(application: &gtk::Application) {
         listbox.add(row);
     }
 
-    window.connect_key_press_event(clone!(entry, listbox => move |window, event| {
+    window.connect_key_press_event(clone!(entry, listbox, entries => move |window, event| {
         use constants::*;
         #[allow(non_upper_case_globals)]
         Inhibit(match event.keyval() {
@@ -101,7 +101,24 @@ fn app_startup(application: &gtk::Application) {
                 true
             },
             Down | Tab if entry.has_focus() => {
-                listbox.row_at_index(1).map(|row| listbox.select_row(Some(&row)));
+                listbox.row_at_index(0).map(|r0| {
+                    let es = entries.borrow();
+                    if r0.is_selected() {
+                        listbox.row_at_index(1).map(|r1| {
+                            es.get(&r1).map(|app_entry| {
+                                if !app_entry.hidden() {
+                                    listbox.select_row(Some(&r1));
+                                }
+                            });
+                        });
+                    } else {
+                        es.get(&r0).map(|app_entry| {
+                            if !app_entry.hidden() {
+                                listbox.select_row(Some(&r0));
+                            }
+                        });
+                    }
+                });
                 false
             },
             Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
@@ -146,12 +163,10 @@ fn app_startup(application: &gtk::Application) {
         }
     }));
 
-    let min_score = 1;
-
     listbox.connect_row_activated(clone!(entries, window, history => move |_, r| {
         let es = entries.borrow();
         let e = &es[r];
-        if e.score >= min_score {
+        if !e.hidden() {
             launch_app(&e.info, term_command.as_deref());
 
             let mut history = history.borrow_mut();
@@ -164,7 +179,7 @@ fn app_startup(application: &gtk::Application) {
 
     listbox.set_filter_func(Some(Box::new(clone!(entries => move |r| {
         let e = entries.borrow();
-        e[r].score >= min_score
+        !e[r].hidden()
     }))));
 
     listbox.set_sort_func(Some(Box::new(clone!(entries => move |a, b| {
