@@ -89,7 +89,7 @@ fn app_startup(application: &gtk::Application) {
     let listbox = ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let history = Rc::new(RefCell::new(load_history()));
+    let history = Rc::new(RefCell::new(load_history(config.prune_history)));
     let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
 
     for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
