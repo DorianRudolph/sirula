@@ -17,14 +17,23 @@ impl PartialEq for HistoryData {
     }
 }
 
-pub fn load_history() -> HashMap<String, HistoryData> {
+pub fn load_history(days: u32) -> HashMap<String, HistoryData> {
     match get_history_file(false) {
         Some(file) => {
             let history_str = std::fs::read_to_string(file).expect("Cannot read history file");
-            toml::from_str(&history_str).unwrap_or_else(|err| {
-                eprintln!("Cannot parse history file: {}", err);
-                HashMap::new()
-            })
+            let epoch = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards");
+            let cutoff = epoch.as_secs() - (days as u64) * 86400;
+            let mut history = toml::from_str(&history_str)
+                .unwrap_or_else(|err| {
+                    eprintln!("Cannot parse history file: {}", err);
+                    HashMap::new()
+                });
+            history.retain(|_, data : &mut HistoryData| {
+                    days == 0 || data.last_used >= cutoff
+            });
+            return history;
         }
         _ => HashMap::new(),
     }
