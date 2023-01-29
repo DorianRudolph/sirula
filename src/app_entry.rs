@@ -20,13 +20,13 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 use crate::locale::string_collate;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::AppInfo;
-use glib::shell_unquote;
+use glib::{shell_unquote, SList};
 use gtk::{
     builders::{BoxBuilder, ImageBuilder, LabelBuilder},
+    pango::{AttrList, Attribute, EllipsizeMode},
     prelude::*,
     IconLookupFlags, IconTheme, Label, ListBoxRow, Orientation,
 };
-use pango::{AttrList, Attribute, EllipsizeMode};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -139,8 +139,8 @@ fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
     }
 }
 
-fn add_attrs(list: &AttrList, attrs: &Vec<Attribute>, start: u32, end: u32) {
-    for attr in attrs {
+fn add_attrs(list: &AttrList, attrs: &SList<Attribute>, start: u32, end: u32) {
+    for attr in attrs.iter() {
         let mut attr = attr.clone();
         attr.set_start_index(start);
         attr.set_end_index(end);

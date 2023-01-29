@@ -8,13 +8,12 @@ edition = "2018"
 freedesktop_entry_parser = "1.2.0"
 locale-types = "0.4.0"
 libc = "0.2.103"
-gtk-layer-shell = "0.4.1"
-gtk = { version = "0.15.5", features = ["v3_22"] }
-gio = { version = "0.15.12", features = ["v2_60"] }
-gdk = "0.15.4"
-pango = "0.15.4"
+gtk-layer-shell = "0.5.1"
+gtk = "0.16.2"
+gio = { version = "0.16.7", features = ["v2_60"] }
+gdk = "0.16.2"
 gdk-pixbuf = "0.15.11"
-glib = "0.15.12"
+glib = "0.16.7"
 futures = "0.3.21"
 fuzzy-matcher = "0.3.7"
 xdg = "2.4.1"
