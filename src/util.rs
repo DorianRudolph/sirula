@@ -59,7 +59,7 @@ pub fn load_css() {
     }
 }
 
-pub fn is_cmd(text: &str, cmd_prefix: &str) -> bool {
+pub fn has_prefix(text: &str, cmd_prefix: &str) -> bool {
     !cmd_prefix.is_empty() && text.starts_with(cmd_prefix)
 }
 

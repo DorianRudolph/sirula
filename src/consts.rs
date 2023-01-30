@@ -21,6 +21,7 @@ pub const APP_NAME: &str = "sirula";
 pub const STYLE_FILE: &str = "style.css";
 pub const CONFIG_FILE: &str = "config.toml";
 pub const HISTORY_FILE: &str = "history";
+pub const DEFAULT_SCRIPTS_DIR: &str = "scripts";
 
 pub const APP_LABEL_CLASS: &str = "app-label";
 pub const APP_ICON_CLASS: &str = "app-icon";

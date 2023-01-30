@@ -19,9 +19,12 @@ use super::consts::*;
 use super::util::get_config_file;
 use glib::SList;
 use gtk::pango::Attribute;
+use once_cell::sync::Lazy;
 use serde::{de::Error, Deserializer};
 use serde_derive::Deserialize;
 use std::collections::HashMap;
+
+pub static CONFIG: Lazy<Config> = Lazy::new(|| Config::load());
 
 macro_rules! make_config {
     ($name:ident { $($field:ident : $type:ty $( = ($default:expr) $field_str:literal )? $( [$serde_opts:expr])? ),* }) => {
@@ -71,7 +74,8 @@ make_config!(Config {
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
-    term_command: Option<String> = (None) "term_command"
+    term_command: Option<String> = (None) "term_command",
+    script_prefix: String = (">".into()) "script_prefix"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<SList<Attribute>, D::Error>
