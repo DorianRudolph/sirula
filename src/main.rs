@@ -104,7 +104,7 @@ fn app_startup(application: &gtk::Application) {
                 window.close();
                 true
             },
-            Down | Tab if entry.has_focus() => {
+            Down | KP_Down | Tab if entry.has_focus() => {
                 if let Some(r0) = listbox.row_at_index(0) {
                     let es = entries.borrow();
                     if r0.is_selected() {
@@ -123,8 +123,9 @@ fn app_startup(application: &gtk::Application) {
                 }
                 false
             },
-            Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
-            | Alt_L | Alt_R | ISO_Left_Tab | Return => false,
+            Up | Down | KP_Up | KP_Down | Page_Up | Page_Down | KP_Page_Up | KP_Page_Down | Tab
+            | Shift_L | Shift_R | Control_L | Control_R | Alt_L | Alt_R | ISO_Left_Tab | Return
+            | KP_Enter => false,
             _ => {
                 if !event.is_modifier() && !entry.has_focus() {
                     entry.grab_focus_without_selecting();
