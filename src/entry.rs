@@ -395,7 +395,9 @@ impl EntryContent {
             EntryContent::Application(app) => launch_app(app, CONFIG.term_command.as_deref()),
             EntryContent::Script(path) => {
                 println!("Running {}", path);
-                Command::new(path).exec();
+                Command::new(path)
+                    .spawn()
+                    .expect("Could not launch application");
             }
             EntryContent::Stdin(text) => println!("{}", text),
         }
