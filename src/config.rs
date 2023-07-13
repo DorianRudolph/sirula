@@ -17,14 +17,18 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use super::consts::*;
 use super::util::get_config_file;
-use pango::Attribute;
+use glib::SList;
+use gtk::pango::Attribute;
+use once_cell::sync::Lazy;
 use serde::{de::Error, Deserializer};
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 
+pub static CONFIG: Lazy<Config> = Lazy::new(|| Config::load());
+
 macro_rules! make_config {
     ($name:ident { $($field:ident : $type:ty $( = ($default:expr) $field_str:literal )? $( [$serde_opts:expr])? ),* }) => {
-        #[derive(Deserialize, Debug)]
+        #[derive(Deserialize)]
         pub struct $name { $(
             #[serde( $(default = $field_str )? )]
             $(#[serde($serde_opts)])?
@@ -46,9 +50,9 @@ pub enum Field {
 
 // not sure how to avoid having to specify the name twice
 make_config!(Config {
-    markup_default: Vec<Attribute> = (Vec::new()) "markup_default" [deserialize_with = "deserialize_markup"],
-    markup_highlight: Vec<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
-    markup_extra: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_extra" [deserialize_with = "deserialize_markup"],
+    markup_default: SList<Attribute> = (parse_attributes("").unwrap()) "markup_default" [deserialize_with = "deserialize_markup"],
+    markup_highlight: SList<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
+    markup_extra: SList<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_extra" [deserialize_with = "deserialize_markup"],
     exclusive: bool = (true) "exclusive",
     frequent_first: bool = (false) "frequent_first",
     recent_first: bool = (true) "recent_first",
@@ -70,10 +74,11 @@ make_config!(Config {
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
-    term_command: Option<String> = (None) "term_command"
+    term_command: Option<String> = (None) "term_command",
+    script_prefix: String = (">".into()) "script_prefix"
 });
 
-fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
+fn deserialize_markup<'de, D>(deserializer: D) -> Result<SList<Attribute>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -92,9 +97,9 @@ impl Config {
     }
 }
 
-fn parse_attributes(markup: &str) -> Result<Vec<Attribute>, String> {
-    let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0')
+fn parse_attributes(markup: &str) -> Result<SList<Attribute>, String> {
+    let (attributes, _, _) = gtk::pango::parse_markup(&format!("<span {}>X</span>", markup), '\0')
         .map_err(|err| format!("Failed to parse markup: {}", err))?;
-    let mut iter = attributes.iterator().ok_or("Failed to parse markup")?;
+    let iter = attributes.iterator();
     Ok(iter.attrs())
 }

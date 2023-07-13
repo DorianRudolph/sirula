@@ -17,7 +17,10 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
-use gio::{prelude::{AppInfoExt, AppInfoExtManual}, AppInfo, AppInfoCreateFlags};
+use gio::{
+    prelude::{AppInfoExt, AppInfoExtManual},
+    AppInfo, AppInfoCreateFlags,
+};
 use glib::{shell_parse_argv, GString, MainContext, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
 use osstrtools::OsStrTools;
@@ -56,7 +59,7 @@ pub fn load_css() {
     }
 }
 
-pub fn is_cmd(text: &str, cmd_prefix: &str) -> bool {
+pub fn has_prefix(text: &str, cmd_prefix: &str) -> bool {
     !cmd_prefix.is_empty() && text.starts_with(cmd_prefix)
 }
 
@@ -77,9 +80,13 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         .app_launch_context()
         .unwrap();
 
-    if info
-        .try_property::<GString>("filename")
-        .ok()
+    let filename: Option<GString> = if info.has_property("filename", None) {
+        Some(info.property("filename"))
+    } else {
+        None
+    };
+
+    if filename
         .and_then(|s| parse_entry(&s).ok())
         .and_then(|e| {
             e.section("Desktop Entry")
