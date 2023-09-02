@@ -52,6 +52,7 @@ make_config!(Config {
     exclusive: bool = (true) "exclusive",
     frequent_first: bool = (false) "frequent_first",
     recent_first: bool = (true) "recent_first",
+    prune_history: u32 = (0) "prune_history",
     icon_size: i32 = (64) "icon_size",
     lines: i32 = (2) "lines",
     margin_left: i32 = (0) "margin_left",

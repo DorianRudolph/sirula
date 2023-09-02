@@ -46,6 +46,9 @@ recent_first = true # sort matches of equal quality by most recently used
 # when both frequent_first and recent_first are set,
 # sorting is by frequency first, and recency is used to break ties in frequency
 
+# if history item is older than this many days, drop it from the history (0 is unset)
+prune_history = 0
+
 # term_command = "alacritty -e {}" # command for applications run in terminal (default uses "$TERMINAL -e")
 
 # specify name overrides (id is the name of the desktop file)
