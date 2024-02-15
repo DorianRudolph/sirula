@@ -134,6 +134,12 @@ fn app_startup(application: &gtk::Application) {
         })
     }));
 
+    // Connect to the "focus-out-event" signal of the window
+    window.connect_focus_out_event(|window, _| {
+        window.close();
+        Inhibit(false) // Continue emitting the signal
+    });
+
     let matcher = SkimMatcherV2::default();
     let term_command = config.term_command.clone();
     entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
