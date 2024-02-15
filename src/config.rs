@@ -65,6 +65,7 @@ make_config!(Config {
     width: i32 = (-1) "width",
     height: i32 = (-1) "height",
     extra_field: Vec<Field> = (vec![Field::IdSuffix]) "extra_field",
+    extra_field_newline: bool = (false) "extra_field_newline",
     hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
     name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
