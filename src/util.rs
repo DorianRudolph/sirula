@@ -17,13 +17,17 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
-use gio::{prelude::{AppInfoExt, AppInfoExtManual}, AppInfo, AppInfoCreateFlags};
+use gio::{
+    prelude::{AppInfoExt, AppInfoExtManual},
+    AppInfo, AppInfoCreateFlags,
+};
 use glib::{shell_parse_argv, GString, MainContext, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
 use osstrtools::OsStrTools;
 use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{id, Command};
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -72,10 +76,18 @@ pub fn launch_cmd(cmd_line: &str) {
 }
 
 pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
-    let context = gdk::Display::default()
+    let mut command: String = info
+        .commandline()
+        .unwrap_or_else(|| info.executable())
+        .to_str()
         .unwrap()
-        .app_launch_context()
-        .unwrap();
+        .to_string()
+        .replace("%U", "")
+        .replace("%F", "")
+        .replace("%u", "")
+        .replace("%f", "");
+
+    let prefix_cgroup = || {};
 
     if info
         .try_property::<GString>("filename")
@@ -88,33 +100,31 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         })
         .unwrap_or_default()
     {
-        let command = (match info.commandline() {
-            Some(c) => c,
-            _ => info.executable(),
-        })
-        .as_os_str()
-        .quote_single();
-
-        let commandline = if let Some(term) = term_command {
-            OsStr::new(term).replace("{}", command)
+        command = if let Some(term) = term_command {
+            term.to_string().replace("{}", &command)
         } else if let Some(mut term) = std::env::var_os("TERMINAL") {
             term.push(" -e ");
             term.push(command);
-            term
+            term.into_string().expect("couldn't convert to string")
         } else {
             return;
         };
-
-        let info = AppInfo::create_from_commandline(commandline, None, AppInfoCreateFlags::NONE)
-            .expect("Failed to create AppInfo from commandline");
-        info.launch(&[], Some(&context))
-            .expect("Error while launching terminal app");
-    } else {
-        let future = info.launch_uris_future(&[], Some(&context));
-        MainContext::default()
-            .block_on(future)
-            .expect("Error while launching app");
+        prefix_cgroup();
     }
+    let mut name = info.id().unwrap().to_string();
+    name.truncate(name.len() - 8);
+    command = format!(
+        "systemd-run --scope --user --unit=app-sirula-{}-{} {}",
+        name,
+        id(),
+        command
+    );
+
+    let command = command.split_whitespace().collect::<Vec<_>>();
+    Command::new(&command[0])
+        .args(&command[1..])
+        .spawn()
+        .expect("Error launching app");
 }
 
 #[macro_export]
