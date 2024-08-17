@@ -18,16 +18,14 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
 use gio::{
-    prelude::{AppInfoExt, AppInfoExtManual},
-    AppInfo, AppInfoCreateFlags,
+    prelude::AppInfoExt,
+    AppInfo,
 };
-use glib::{shell_parse_argv, GString, MainContext, ObjectExt};
+use glib::{shell_parse_argv, GString, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
-use osstrtools::OsStrTools;
-use std::ffi::OsStr;
-use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{id, Command};
+use super::Config;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -75,7 +73,7 @@ pub fn launch_cmd(cmd_line: &str) {
     child.spawn().expect("Error spawning command");
 }
 
-pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
+pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bool) {
     let mut command: String = info
         .commandline()
         .unwrap_or_else(|| info.executable())
@@ -86,8 +84,6 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         .replace("%F", "")
         .replace("%u", "")
         .replace("%f", "");
-
-    let prefix_cgroup = || {};
 
     if info
         .try_property::<GString>("filename")
@@ -109,16 +105,17 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         } else {
             return;
         };
-        prefix_cgroup();
     }
-    let mut name = info.id().unwrap().to_string();
-    name.truncate(name.len() - 8);
-    command = format!(
-        "systemd-run --scope --user --unit=app-sirula-{}-{} {}",
-        name,
-        id(),
-        command
-    );
+    if launch_cgroups {
+	    let mut name = info.id().unwrap().to_string();
+	    name.truncate(name.len() - 8); // remove .desktop extension
+	    command = format!(
+	        "systemd-run --scope --user --unit=app-sirula-{}-{} {}",
+	        name,
+	        id(),
+	        command
+	    );
+	  }
 
     let command = command.split_whitespace().collect::<Vec<_>>();
     Command::new(&command[0])
