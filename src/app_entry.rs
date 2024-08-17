@@ -134,7 +134,7 @@ fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
             .file_name()
             .and_then(|e| shell_unquote(e).ok())
             .map(|s| s.to_string_lossy().to_string()),
-        //TODO: clean up command line from %
+        //TODO: clean up command line from % for all what is not done in launch_app() in src/util.rx
         Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()),
     }
 }
