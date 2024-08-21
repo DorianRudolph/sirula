@@ -15,17 +15,14 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use super::Config;
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
-use gio::{
-    prelude::AppInfoExt,
-    AppInfo,
-};
+use gio::{prelude::AppInfoExt, AppInfo};
 use glib::{shell_parse_argv, GString, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
 use std::path::PathBuf;
 use std::process::{id, Command};
-use super::Config;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -107,15 +104,20 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bo
         };
     }
     if launch_cgroups {
-	    let mut name = info.id().unwrap().to_string();
-	    name.truncate(name.len() - 8); // remove .desktop extension
-	    command = format!(
-	        "systemd-run --scope --user --unit=app-sirula-{}-{} {}",
-	        name,
-	        id(),
-	        command
-	    );
-	  }
+        let mut name = info.id().unwrap().to_string();
+        name.truncate(name.len() - 8); // remove .desktop extension
+        let parsed = Command::new("systemd-escape")
+            .arg(name)
+            .output()
+            .unwrap()
+            .stdout;
+        command = format!(
+            "systemd-run --scope --user --unit=app-sirula-{}-{} {}",
+            String::from_utf8_lossy(&parsed).trim(),
+            id(),
+            command
+        );
+    }
 
     let command = command.split_whitespace().collect::<Vec<_>>();
     Command::new(&command[0])
