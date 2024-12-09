@@ -55,6 +55,7 @@ fn app_startup(application: &gtk::Application) {
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);
     gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
+    gtk_layer_shell::set_namespace(&window, "sirula");
 
     if config.exclusive {
         gtk_layer_shell::auto_exclusive_zone_enable(&window);
