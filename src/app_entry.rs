@@ -53,10 +53,21 @@ impl AppEntry {
             self.label.set_attributes(None);
             100
         } else if let Some((score, indices)) = matcher.fuzzy_indices(&self.search_string, pattern) {
+            let mut chars = vec![];
+            for cur in self.search_string.as_str().char_indices() {
+                chars.push(cur);
+            }
+            chars.push((self.search_string.len(), ' '));
+
             for i in indices {
                 if i < self.display_string.len() {
-                    let i = i as u32;
-                    add_attrs(&attr_list, &config.markup_highlight, i, i + 1);
+                    let i = i as usize;
+                    add_attrs(
+                        &attr_list,
+                        &config.markup_highlight,
+                        chars[i].0 as u32,
+                        chars[i + 1].0 as u32,
+                    );
                 }
             }
             score
