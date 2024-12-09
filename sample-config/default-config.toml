@@ -41,6 +41,9 @@ hidden_fields = [] # list of fields considered for search but hidden
 
 exclude = [] # list of regexes for excluded app ids (name of the .desktop file)
 
+# launch apps in cgroups via systemd for better app management and detection
+cgroups = true
+
 # prefix for running commands instead of launching an app (e.g., `:xeyes` to launch xeyes)
 # use "" to disable launching commands
 command_prefix = ":"

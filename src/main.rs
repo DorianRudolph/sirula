@@ -47,6 +47,7 @@ use history::*;
 
 fn app_startup(application: &gtk::Application) {
     let config = Config::load();
+    let launch_cgroups = config.cgroups;
     let cmd_prefix = config.command_prefix.clone();
 
     let window = gtk::ApplicationWindow::new(application);
@@ -178,7 +179,7 @@ fn app_startup(application: &gtk::Application) {
         let es = entries.borrow();
         let e = &es[r];
         if !e.hidden() {
-            launch_app(&e.info, term_command.as_deref());
+            launch_app(&e.info, term_command.as_deref(), launch_cgroups);
 
             let mut history = history.borrow_mut();
             update_history(&mut history, e.info.id().unwrap().as_str());

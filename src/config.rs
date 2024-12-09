@@ -70,6 +70,7 @@ make_config!(Config {
     hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
     name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
+    cgroups: bool = (true) "cgroups",
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
     term_command: Option<String> = (None) "term_command",
