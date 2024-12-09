@@ -15,7 +15,6 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::Config;
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
 use gio::{prelude::AppInfoExt, AppInfo};
@@ -23,6 +22,7 @@ use glib::{shell_parse_argv, GString, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
 use std::path::PathBuf;
 use std::process::{id, Command};
+use shlex::Shlex;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -71,7 +71,7 @@ pub fn launch_cmd(cmd_line: &str) {
 }
 
 pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bool) {
-    let mut command: String = info
+    let command_string = info
         .commandline()
         .unwrap_or_else(|| info.executable())
         .to_str()
@@ -81,6 +81,7 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bo
         .replace("%F", "")
         .replace("%u", "")
         .replace("%f", "");
+    let mut command: Vec<String> = Shlex::new(&command_string).collect();
 
     if info
         .try_property::<GString>("filename")
@@ -93,12 +94,14 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bo
         })
         .unwrap_or_default()
     {
-        command = if let Some(term) = term_command {
-            term.to_string().replace("{}", &command)
-        } else if let Some(mut term) = std::env::var_os("TERMINAL") {
-            term.push(" -e ");
-            term.push(command);
-            term.into_string().expect("couldn't convert to string")
+        if let Some(term) = term_command {
+            let command_string = term.to_string().replace("{}", &command_string);
+		    command = Shlex::new(&command_string).collect();
+        } else if let Some(term) = std::env::var_os("TERMINAL") {
+        	let term = term.into_string().expect("couldn't convert to string");
+        	let mut command_new = vec![term, "-e".into()];
+        	command_new.extend(command);
+        	command = command_new;
         } else {
             return;
         };
@@ -111,15 +114,16 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bo
             .output()
             .unwrap()
             .stdout;
-        command = format!(
-            "systemd-run --scope --user --unit=app-sirula-{}-{} {}",
+        let unit = format!(
+            "--unit=app-sirula-{}-{}",
             String::from_utf8_lossy(&parsed).trim(),
-            id(),
-            command
+            id()
         );
+        let mut command_new: Vec<String> = vec!["systemd-run".into(), "--scope".into(), "--user".into(), unit];
+        command_new.extend(command);
+        command = command_new;
     }
 
-    let command = command.split_whitespace().collect::<Vec<_>>();
     Command::new(&command[0])
         .args(&command[1..])
         .spawn()

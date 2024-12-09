@@ -23,6 +23,7 @@ serde_derive = "1.0.138"
 toml = "0.5.9"
 regex = "1.6.0"
 osstrtools = {git = "https://github.com/Artturin/osstrtools.git", rev="6360f4f842eb542ff4e62e75851ea8ba83808471"}
+shlex = "1.3.0"
 
 [profile.release]
 lto = true
