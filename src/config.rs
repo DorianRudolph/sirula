@@ -71,7 +71,8 @@ make_config!(Config {
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
-    term_command: Option<String> = (None) "term_command"
+    term_command: Option<String> = (None) "term_command",
+    close_on_unfocus: bool = (true) "close_on_unfocus"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>

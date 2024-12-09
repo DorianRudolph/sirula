@@ -134,6 +134,13 @@ fn app_startup(application: &gtk::Application) {
         })
     }));
 
+	if config.close_on_unfocus {
+	    window.connect_focus_out_event(|window, _| {
+    	    window.close();
+    	    Inhibit(false)
+    	});
+    }
+
     let matcher = SkimMatcherV2::default();
     let term_command = config.term_command.clone();
     entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
