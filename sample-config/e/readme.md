@@ -1,3 +1,3 @@
 # Config E
 
-![config-e](./sirula.mp4)
+![config-e](./sirula.gif)
