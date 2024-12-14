@@ -1,8 +1,8 @@
 [package]
 name = "sirula"
-version = "1.0.1"
-authors = ["Dorian Rudolph"]
-edition = "2018"
+version = "1.1.0"
+authors = ["Dorian Rudolph", "Jan Luca"]
+edition = "2021"
 
 [dependencies]
 freedesktop_entry_parser = "1.2.0"
