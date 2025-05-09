@@ -1,0 +1,28 @@
+markup_highlight = 'underline="low"'
+command_prefix = ":"
+lines = 2
+icon_size = 48
+
+extra_field = ["comment"]
+extra_field_newline = true
+hidden_fields = ["commandline", "executable"]
+markup_extra = 'font_size="smaller"'
+
+frequent_first = true
+recent_first = true
+cgroups = true
+term_command = "footclient {}"
+close_on_unfocus = true
+prune_history = 360
+
+exclusive = false
+anchor_left = false
+anchor_right = false
+anchor_top = true
+anchor_bottom = false
+margin_top = 300
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+width = 400
+height = 550

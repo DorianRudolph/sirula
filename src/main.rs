@@ -47,6 +47,7 @@ use history::*;
 
 fn app_startup(application: &gtk::Application) {
     let config = Config::load();
+    let launch_cgroups = config.cgroups;
     let cmd_prefix = config.command_prefix.clone();
 
     let window = gtk::ApplicationWindow::new(application);
@@ -55,6 +56,7 @@ fn app_startup(application: &gtk::Application) {
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);
     gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
+    gtk_layer_shell::set_namespace(&window, "sirula");
 
     if config.exclusive {
         gtk_layer_shell::auto_exclusive_zone_enable(&window);
@@ -89,7 +91,7 @@ fn app_startup(application: &gtk::Application) {
     let listbox = ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let history = Rc::new(RefCell::new(load_history()));
+    let history = Rc::new(RefCell::new(load_history(config.prune_history)));
     let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
 
     for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
@@ -104,7 +106,7 @@ fn app_startup(application: &gtk::Application) {
                 window.close();
                 true
             },
-            Down | Tab if entry.has_focus() => {
+            Down | KP_Down | Tab if entry.has_focus() => {
                 if let Some(r0) = listbox.row_at_index(0) {
                     let es = entries.borrow();
                     if r0.is_selected() {
@@ -123,8 +125,9 @@ fn app_startup(application: &gtk::Application) {
                 }
                 false
             },
-            Up | Down | Page_Up | Page_Down | Tab | Shift_L | Shift_R | Control_L | Control_R
-            | Alt_L | Alt_R | ISO_Left_Tab | Return => false,
+            Up | Down | KP_Up | KP_Down | Page_Up | Page_Down | KP_Page_Up | KP_Page_Down | Tab
+            | Shift_L | Shift_R | Control_L | Control_R | Alt_L | Alt_R | ISO_Left_Tab | Return
+            | KP_Enter => false,
             _ => {
                 if !event.is_modifier() && !entry.has_focus() {
                     entry.grab_focus_without_selecting();
@@ -133,6 +136,13 @@ fn app_startup(application: &gtk::Application) {
             }
         })
     }));
+
+	if config.close_on_unfocus {
+	    window.connect_focus_out_event(|window, _| {
+    	    window.close();
+    	    Inhibit(false)
+    	});
+    }
 
     let matcher = SkimMatcherV2::default();
     let term_command = config.term_command.clone();
@@ -169,7 +179,7 @@ fn app_startup(application: &gtk::Application) {
         let es = entries.borrow();
         let e = &es[r];
         if !e.hidden() {
-            launch_app(&e.info, term_command.as_deref());
+            launch_app(&e.info, term_command.as_deref(), launch_cgroups);
 
             let mut history = history.borrow_mut();
             update_history(&mut history, e.info.id().unwrap().as_str());

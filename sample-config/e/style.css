@@ -1,0 +1,55 @@
+* {
+	background-clip: padding-box;
+	border-radius: 10px;
+	text-shadow: none;
+	outline: none;
+	box-shadow: none;
+	color: white;
+    background: transparent;
+}
+
+/* GtkApplicationWindow */
+.background {
+	opacity: 1;
+	font-family: Rubik, sans-serif;
+}
+
+#root-box {}
+
+#app-list, #search {
+	background: alpha(#04232A, 0.8);
+}
+
+#search {
+    font-size: 1.5em;
+    font-weight: 500;
+    padding: 8px 11px;
+    margin-bottom: 6px;
+    border: 3px solid #8000ff;
+}
+
+.app-row {
+	border-radius: 10px;
+	transition: 0.2s;
+	padding: 6px 16px 6px 0;
+	opacity: 0.95;
+}
+
+.app-row:selected, .app-row:hover {
+	padding-left: 8px;
+	padding-right: 8px;
+	opacity: 1;
+	background-color: alpha(#8000ff, 0.8);
+	outline: none;
+}
+
+.app-label {
+    padding-left: 1em;
+    font-size: 16px;
+    border: none;
+}
+
+.app-icon {
+	border-radius: 1rem;
+	margin: 0 8px;
+}

@@ -17,13 +17,12 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
-use gio::{prelude::{AppInfoExt, AppInfoExtManual}, AppInfo, AppInfoCreateFlags};
-use glib::{shell_parse_argv, GString, MainContext, ObjectExt};
+use gio::{prelude::AppInfoExt, AppInfo};
+use glib::{shell_parse_argv, GString, ObjectExt};
 use gtk::{prelude::CssProviderExt, CssProvider};
-use osstrtools::OsStrTools;
-use std::ffi::OsStr;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{id, Command};
+use shlex::Shlex;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -71,11 +70,18 @@ pub fn launch_cmd(cmd_line: &str) {
     child.spawn().expect("Error spawning command");
 }
 
-pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
-    let context = gdk::Display::default()
+pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bool) {
+    let command_string = info
+        .commandline()
+        .unwrap_or_else(|| info.executable())
+        .to_str()
         .unwrap()
-        .app_launch_context()
-        .unwrap();
+        .to_string()
+        .replace("%U", "")
+        .replace("%F", "")
+        .replace("%u", "")
+        .replace("%f", "");
+    let mut command: Vec<String> = Shlex::new(&command_string).collect();
 
     if info
         .try_property::<GString>("filename")
@@ -88,33 +94,40 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>) {
         })
         .unwrap_or_default()
     {
-        let command = (match info.commandline() {
-            Some(c) => c,
-            _ => info.executable(),
-        })
-        .as_os_str()
-        .quote_single();
-
-        let commandline = if let Some(term) = term_command {
-            OsStr::new(term).replace("{}", command)
-        } else if let Some(mut term) = std::env::var_os("TERMINAL") {
-            term.push(" -e ");
-            term.push(command);
-            term
+        if let Some(term) = term_command {
+            let command_string = term.to_string().replace("{}", &command_string);
+		    command = Shlex::new(&command_string).collect();
+        } else if let Some(term) = std::env::var_os("TERMINAL") {
+        	let term = term.into_string().expect("couldn't convert to string");
+        	let mut command_new = vec![term, "-e".into()];
+        	command_new.extend(command);
+        	command = command_new;
         } else {
             return;
         };
-
-        let info = AppInfo::create_from_commandline(commandline, None, AppInfoCreateFlags::NONE)
-            .expect("Failed to create AppInfo from commandline");
-        info.launch(&[], Some(&context))
-            .expect("Error while launching terminal app");
-    } else {
-        let future = info.launch_uris_future(&[], Some(&context));
-        MainContext::default()
-            .block_on(future)
-            .expect("Error while launching app");
     }
+    if launch_cgroups {
+        let mut name = info.id().unwrap().to_string();
+        name.truncate(name.len() - 8); // remove .desktop extension
+        let parsed = Command::new("systemd-escape")
+            .arg(name)
+            .output()
+            .unwrap()
+            .stdout;
+        let unit = format!(
+            "--unit=app-sirula-{}-{}",
+            String::from_utf8_lossy(&parsed).trim(),
+            id()
+        );
+        let mut command_new: Vec<String> = vec!["systemd-run".into(), "--scope".into(), "--user".into(), unit];
+        command_new.extend(command);
+        command = command_new;
+    }
+
+    Command::new(&command[0])
+        .args(&command[1..])
+        .spawn()
+        .expect("Error launching app");
 }
 
 #[macro_export]

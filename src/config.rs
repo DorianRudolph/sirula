@@ -52,6 +52,7 @@ make_config!(Config {
     exclusive: bool = (true) "exclusive",
     frequent_first: bool = (false) "frequent_first",
     recent_first: bool = (true) "recent_first",
+    prune_history: u32 = (0) "prune_history",
     icon_size: i32 = (64) "icon_size",
     lines: i32 = (2) "lines",
     margin_left: i32 = (0) "margin_left",
@@ -65,12 +66,15 @@ make_config!(Config {
     width: i32 = (-1) "width",
     height: i32 = (-1) "height",
     extra_field: Vec<Field> = (vec![Field::IdSuffix]) "extra_field",
+    extra_field_newline: bool = (false) "extra_field_newline",
     hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
     name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
+    cgroups: bool = (true) "cgroups",
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
-    term_command: Option<String> = (None) "term_command"
+    term_command: Option<String> = (None) "term_command",
+    close_on_unfocus: bool = (true) "close_on_unfocus"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>

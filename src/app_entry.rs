@@ -145,7 +145,7 @@ fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
             .file_name()
             .and_then(|e| shell_unquote(e).ok())
             .map(|s| s.to_string_lossy().to_string()),
-        //TODO: clean up command line from %
+        //TODO: clean up command line from % for all what is not done in launch_app() in src/util.rx
         Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()),
     }
 }
@@ -203,7 +203,11 @@ pub fn load_entries(
                         || !name.to_lowercase().contains(&e.to_lowercase())) =>
                 {
                     (
-                        format!("{} {}", name, e),
+                        format!("{}{}{}",
+                            name,
+                            if config.extra_field_newline {"\n"} else {" "},
+                            e
+                        ),
                         Some((
                             name.len() as u32 + 1,
                             name.len() as u32 + 1 + e.len() as u32,
