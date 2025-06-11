@@ -23,6 +23,7 @@ use gtk::{prelude::CssProviderExt, CssProvider};
 use std::path::PathBuf;
 use std::process::{id, Command};
 use shlex::Shlex;
+use crate::app_entry::desktop_entry::DesktopEntry;
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -70,29 +71,16 @@ pub fn launch_cmd(cmd_line: &str) {
     child.spawn().expect("Error spawning command");
 }
 
-pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bool) {
+pub fn launch_app(info: &DesktopEntry, term_command: Option<&str>, launch_cgroups: bool) {
     let command_string = info
-        .commandline()
-        .unwrap_or_else(|| info.executable())
-        .to_str()
-        .unwrap()
-        .to_string()
+        .exec
         .replace("%U", "")
         .replace("%F", "")
         .replace("%u", "")
         .replace("%f", "");
     let mut command: Vec<String> = Shlex::new(&command_string).collect();
 
-    if info
-        .try_property::<GString>("filename")
-        .ok()
-        .and_then(|s| parse_entry(&s).ok())
-        .and_then(|e| {
-            e.section("Desktop Entry")
-                .attr("Terminal")
-                .map(|t| t == "1" || t == "true")
-        })
-        .unwrap_or_default()
+    if info.terminal
     {
         if let Some(term) = term_command {
             let command_string = term.to_string().replace("{}", &command_string);
@@ -106,11 +94,10 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bo
             return;
         };
     }
-    if launch_cgroups {
-        let mut name = info.id().unwrap().to_string();
-        name.truncate(name.len() - 8); // remove .desktop extension
+    if launch_cgroups { // TODO: clone
+        info.id.clone().truncate(info.id.len() - 8); // remove .desktop extension
         let parsed = Command::new("systemd-escape")
-            .arg(name)
+            .arg(&info.name)
             .output()
             .unwrap()
             .stdout;

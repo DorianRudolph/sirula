@@ -9,19 +9,20 @@ use std::{
 };
 
 pub struct DesktopEntry {
-	id: String,
-	path: PathBuf,
-	name: String,
-	icon: String,
-	exec: String,
-	terminal: bool,
-	prefers_nondefault_gpu: bool,
-	actions: Vec<DesktopAction>,
+	pub id: String,
+	pub path: PathBuf,
+	pub name: String,
+	pub desc: String,
+	pub icon: Option<String>,
+	pub exec: String,
+	pub terminal: bool,
+	pub prefers_nondefault_gpu: bool,
+	pub actions: Vec<DesktopAction>,
 }
 
 pub struct DesktopAction {
-	name: String,
-	exec: String,
+	pub name: String,
+	pub exec: String,
 }
 
 macro_rules! skip_none { // TODO: add id
@@ -92,7 +93,8 @@ impl DesktopEntry {
 			let app_entry = DesktopEntry {
 				path: entry.path,
 				name: skip_none!(get_key(desktop_entry, "Name"), id),
-				icon: get_key(desktop_entry, "Icon").unwrap_or_default(),
+				desc: get_key(desktop_entry, "Description").unwrap_or_default(),
+				icon: get_key(desktop_entry, "Icon"),
 				exec: skip_none!(get_exec_key(desktop_entry), id),
 				terminal: get_key_bool(desktop_entry, "Terminal").unwrap_or_default(),
 				prefers_nondefault_gpu: get_key_bool(desktop_entry, "PrefersNonDefaultGPU").unwrap_or_default(),
@@ -139,3 +141,11 @@ fn get_key(group: &Group, key: &str) -> Option<String> {
 		None => None,
 	}
 }
+
+impl PartialEq for DesktopEntry {
+	fn eq(&self, other: &Self) -> bool {
+		self.id == other.id
+	}
+}
+
+impl Eq for DesktopEntry {}
