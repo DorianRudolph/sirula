@@ -19,7 +19,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::locale::string_collate;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use gio::AppInfo;
+// use gio::AppInfo;
 use glib::shell_unquote;
 use gtk::{
     builders::{BoxBuilder, ImageBuilder, LabelBuilder},
@@ -32,6 +32,8 @@ use std::collections::HashMap;
 
 use super::{consts::*, Config, Field, HistoryData};
 use regex::RegexSet;
+
+mod desktop_entry;
 
 #[derive(Eq)]
 pub struct AppEntry {
@@ -203,9 +205,14 @@ pub fn load_entries(
                         || !name.to_lowercase().contains(&e.to_lowercase())) =>
                 {
                     (
-                        format!("{}{}{}",
+                        format!(
+                            "{}{}{}",
                             name,
-                            if config.extra_field_newline {"\n"} else {" "},
+                            if config.extra_field_newline {
+                                "\n"
+                            } else {
+                                " "
+                            },
                             e
                         ),
                         Some((
