@@ -6,6 +6,7 @@ use which::which;
 use std::{
 	path::PathBuf,
 	env::var,
+	collections::HashMap,
 };
 
 pub struct DesktopEntry {
@@ -30,7 +31,7 @@ macro_rules! skip_none { // TODO: add id
         match $res {
             Some(val) => val,
             None => {
-            	println!("skiping {}", $id);
+            	println!("skipping {}", $id);
                 continue;
             }
         }
@@ -44,7 +45,7 @@ impl DesktopEntry {
 	        .entries(Some(&locales))
 	        .collect::<Vec<_>>();
 
-	    let mut out = Vec::new();
+	    let mut out = HashMap::new();
 
 		for entry in entries {
 			let id = entry.appid;
@@ -98,12 +99,15 @@ impl DesktopEntry {
 				exec: skip_none!(get_exec_key(desktop_entry), id),
 				terminal: get_key_bool(desktop_entry, "Terminal").unwrap_or_default(),
 				prefers_nondefault_gpu: get_key_bool(desktop_entry, "PrefersNonDefaultGPU").unwrap_or_default(),
-				id, actions,
+				id: id.clone(), // TODO: clone
+				actions,
 			};
 
-			out.push(app_entry)
+			if let Err(e) = out.try_insert(id, app_entry) {
+				println!("skipping {} {}", e.value.id, e.value.path.display())
+			}
 		}
-		out
+		out.into_values().collect()
 	}
 }
 

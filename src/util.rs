@@ -95,9 +95,9 @@ pub fn launch_app(info: &DesktopEntry, term_command: Option<&str>, launch_cgroup
         };
     }
     if launch_cgroups { // TODO: clone
-        info.id.clone().truncate(info.id.len() - 8); // remove .desktop extension
+        // info.id.clone().truncate(info.id.len() - ".desktop".len()); // remove .desktop extension
         let parsed = Command::new("systemd-escape")
-            .arg(&info.name)
+            .arg(&info.id)
             .output()
             .unwrap()
             .stdout;
