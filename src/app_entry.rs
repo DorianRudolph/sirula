@@ -267,7 +267,7 @@ pub fn load_entries(
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
-        let history_data = history.get(&app.id).copied().unwrap_or_default();
+        let history_data = history.get(&format!("{}.desktop", &app.id)).copied().unwrap_or_default();
         let last_used = if config.recent_first {
             history_data.last_used
         } else {

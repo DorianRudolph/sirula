@@ -184,7 +184,7 @@ fn app_startup(application: &gtk::Application) {
             launch_app(&e.info, term_command.as_deref(), launch_cgroups);
 
             let mut history = history.borrow_mut();
-            update_history(&mut history, e.info.id.as_str());
+            update_history(&mut history, &format!("{}.desktop", e.info.id));
             save_history(&history);
 
             window.close();
