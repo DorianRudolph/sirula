@@ -37,9 +37,13 @@ macro_rules! make_config {
 #[derive(Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Field {
-    Comment,
     Id,
     IdSuffix,
+	Name,
+	GenericName,
+    Comment,
+    Categories,
+    Keywords,
     Executable,
     Commandline,
 }

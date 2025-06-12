@@ -11,13 +11,21 @@ use std::{
 
 pub struct DesktopEntry {
 	pub id: String,
-	pub path: PathBuf,
+	pub file: PathBuf,
 	pub name: String,
-	pub desc: String,
-	pub icon: Option<String>,
 	pub exec: String,
+
+	pub generic_name: Option<String>,
+	pub keywords: Option<String>,
+	pub comment: Option<String>,
+	pub categories: Option<String>,
+
+	pub icon: Option<String>,
+
+	pub path: Option<String>,
 	pub terminal: bool,
 	pub prefers_nondefault_gpu: bool,
+
 	pub actions: Vec<DesktopAction>,
 }
 
@@ -31,7 +39,7 @@ macro_rules! skip_none { // TODO: add id
         match $res {
             Some(val) => val,
             None => {
-            	println!("skipping {}", $id);
+            	println!("skipping: {} (missing/wrong values)", $id);
                 continue;
             }
         }
@@ -46,8 +54,12 @@ impl DesktopEntry {
 	        .collect::<Vec<_>>();
 
 	    let mut out = HashMap::new();
+	    let xdg_current_desktop = var("XDG_CURRENT_DESKTOP");
+	    if let Err(e) = &xdg_current_desktop {
+			println!("XDG_CURRENT_DESKTOP env variable can't be read! {}", e);
+	    }
 
-		for entry in entries {
+		for entry in entries.into_iter().rev() {
 			let id = entry.appid;
 			let desktop_entry = entry.groups.0.get("Desktop Entry").unwrap();
 			
@@ -60,22 +72,21 @@ impl DesktopEntry {
 				let mut only_show_in = false;
 				let mut not_show_in = false;
 
-				match var("XDG_CURRENT_DESKTOP") {
+				match &xdg_current_desktop {
 					Ok(x) => {
 						if let Some(strx) = only_show_in_str {
-							only_show_in = ! strx.contains(&x)
+							only_show_in = ! strx.contains(x)
 						}
 						if let Some(strx) = not_show_in_str {
-							not_show_in = strx.contains(&x)
+							not_show_in = strx.contains(x)
 						}
 					},
 					Err(_) => {
-						println!("XDG_CURRENT_DESKTOP env variable isn't set!");
 						only_show_in = only_show_in_str.is_some();
 					}
 				};
 				if not_show_in || only_show_in || hidden || nodisplay {
-					println!("skiping: {}", &id);
+					println!("skipping: {} (hidden)", &id);
 					continue
 				}
 			}
@@ -92,19 +103,27 @@ impl DesktopEntry {
 			}
 			
 			let app_entry = DesktopEntry {
-				path: entry.path,
+				id: id.clone(), // TODO: clone
+				file: entry.path,
 				name: skip_none!(get_key(desktop_entry, "Name"), id),
-				desc: get_key(desktop_entry, "Description").unwrap_or_default(),
-				icon: get_key(desktop_entry, "Icon"),
 				exec: skip_none!(get_exec_key(desktop_entry), id),
+
+				generic_name: get_key(desktop_entry, "GenericName"),
+				comment: get_key(desktop_entry, "Comment"),
+				keywords: get_key(desktop_entry, "Keywords"),
+				categories: get_key(desktop_entry, "Categories"),
+
+				icon: get_key(desktop_entry, "Icon"),
+
+				path: get_key(desktop_entry, "Path"),
 				terminal: get_key_bool(desktop_entry, "Terminal").unwrap_or_default(),
 				prefers_nondefault_gpu: get_key_bool(desktop_entry, "PrefersNonDefaultGPU").unwrap_or_default(),
-				id: id.clone(), // TODO: clone
+
 				actions,
 			};
 
-			if let Err(e) = out.try_insert(id, app_entry) {
-				println!("skipping {} {}", e.value.id, e.value.path.display())
+			if let Some(app_entry) = out.insert(id, app_entry) {
+				println!("skipping: {} (overwritten)", app_entry.id)
 			}
 		}
 		out.into_values().collect()
@@ -116,7 +135,7 @@ fn get_exec_key(group: &Group) -> Option<String> {
 		Some(try_exec) => {
 			match which(&try_exec) {
 				Ok(_) => Some(try_exec),
-				Err(_) => get_key(group, "Exec"),
+				Err(_) => None,
 			}
 		}
 		None => {

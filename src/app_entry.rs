@@ -133,28 +133,25 @@ impl PartialOrd for AppEntry {
     }
 }
 
-// get rid of the check at the bottom
+// TODO: get rid of the clones
 fn get_app_field(app: &DesktopEntry, field: Field) -> Option<String> {
-    let out = match field {
-        Field::Comment => app.desc.clone(),
-        Field::Id => app.id.strip_suffix(".desktop").unwrap_or_default().to_string(),
+    match field {
+        Field::Id => Some(app.id.clone()),
         Field::IdSuffix => {
             let parts: Vec<&str> = app.id.split('.').collect();
-            parts.get(parts.len() - 2).map(|s| s.to_string()).unwrap_or_default()
+	        parts.last().map(|s| s.to_string())
         },
+        Field::Name => Some(app.name.clone()),
+        Field::GenericName => app.generic_name.clone(),
+        Field::Comment => app.comment.clone(),
+        Field::Categories => app.categories.clone(),
+        Field::Keywords => app.keywords.clone(),
         Field::Executable => app
             .exec
             .split_whitespace()
             .next()
-            .unwrap_or_default()
-            .to_string(),
-        //TODO: clean up command line from % for all what is not done in launch_app() in src/util.rx
-        Field::Commandline => app.exec.clone(),
-    };
-    if !out.is_empty() {
-    	Some(out)
-    } else {
-    	None
+            .map(|s| s.to_string()),
+        Field::Commandline => Some(app.exec.clone()),
     }
 }
 
@@ -190,35 +187,33 @@ pub fn load_entries(
                 name.replace('\r', " "),
                 i.map(|i| (i as u32 + 1, name.len() as u32)),
             )
+        } else if !config.extra_field.is_empty() {
+        	let mut out = (app.name.clone(), None);
+        	for f in &config.extra_field {
+	            if let Some(e) = get_app_field(&app, *f) {
+		            if !config.hide_extra_if_contained || !app.name.to_lowercase().contains(&e.to_lowercase()) {
+		            	out = (
+		                   format!(
+		                       "{}{}{}",
+		                       app.name,
+		                       if config.extra_field_newline {
+		                           "\n"
+		                       } else {
+		                           " "
+		                       },
+		                       e
+		                   ),
+		                   Some((
+		                       app.name.len() as u32 + 1,
+		                       app.name.len() as u32 + 1 + e.len() as u32,
+		                   )),
+		               )
+		            }
+		        }
+        	}
+        	out
         } else {
-            let extra = config
-                .extra_field
-                .get(0)
-                .and_then(|f| get_app_field(&app, *f));
-            match extra {
-                Some(e)
-                    if (!config.hide_extra_if_contained
-                        || !app.name.to_lowercase().contains(&e.to_lowercase())) =>
-                {
-                    (
-                        format!(
-                            "{}{}{}",
-                            app.name,
-                            if config.extra_field_newline {
-                                "\n"
-                            } else {
-                                " "
-                            },
-                            e
-                        ),
-                        Some((
-                            app.name.len() as u32 + 1,
-                            app.name.len() as u32 + 1 + e.len() as u32,
-                        )),
-                    )
-                }
-                _ => (app.name.clone(), None),
-            }
+        	(app.name.clone(), None)
         };
 
         let hidden = config
