@@ -57,7 +57,7 @@ recent_first = true # sort matches of equal quality by most recently used
 prune_history = 0
 
 # term_command = "alacritty -e {}" # command for applications run in terminal (default uses "$TERMINAL -e")
-
+# set_gpu_variable = "PRIME" # variable to set to offload if specified by application (default don't offload)
 # specify name overrides (id is the name of the desktop file)
 [name_overrides]
 # id = "name\rextra"

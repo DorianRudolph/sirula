@@ -21,7 +21,6 @@ use crate::locale::string_collate;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 // use gio::AppInfo;
 use gio::Icon;
-use glib::shell_unquote;
 use gtk::{
     builders::{BoxBuilder, ImageBuilder, LabelBuilder},
     prelude::*,
@@ -65,7 +64,6 @@ impl AppEntry {
 
             for i in indices {
                 if i < self.display_string.len() {
-                    let i = i as usize;
                     add_attrs(
                         &attr_list,
                         &config.markup_highlight,
@@ -139,18 +137,14 @@ fn get_app_field(app: &DesktopEntry, field: Field) -> Option<String> {
         Field::Id => Some(app.id.clone()),
         Field::IdSuffix => {
             let parts: Vec<&str> = app.id.split('.').collect();
-	        parts.last().map(|s| s.to_string())
-        },
+            parts.last().map(|s| s.to_string())
+        }
         Field::Name => Some(app.name.clone()),
         Field::GenericName => app.generic_name.clone(),
         Field::Comment => app.comment.clone(),
         Field::Categories => app.categories.clone(),
         Field::Keywords => app.keywords.clone(),
-        Field::Executable => app
-            .exec
-            .split_whitespace()
-            .next()
-            .map(|s| s.to_string()),
+        Field::Executable => app.exec.split_whitespace().next().map(|s| s.to_string()),
         Field::Commandline => Some(app.exec.clone()),
     }
 }
@@ -179,42 +173,42 @@ pub fn load_entries(
             continue;
         }
 
-        let (display_string, extra_range) = if let Some(name) =
-            config.name_overrides.get(&app.id)
-        {
+        let (display_string, extra_range) = if let Some(name) = config.name_overrides.get(&app.id) {
             let i = name.find('\r');
             (
                 name.replace('\r', " "),
                 i.map(|i| (i as u32 + 1, name.len() as u32)),
             )
         } else if !config.extra_field.is_empty() {
-        	let mut out = (app.name.clone(), None);
-        	for f in &config.extra_field {
-	            if let Some(e) = get_app_field(&app, *f) {
-		            if !config.hide_extra_if_contained || !app.name.to_lowercase().contains(&e.to_lowercase()) {
-		            	out = (
-		                   format!(
-		                       "{}{}{}",
-		                       app.name,
-		                       if config.extra_field_newline {
-		                           "\n"
-		                       } else {
-		                           " "
-		                       },
-		                       e
-		                   ),
-		                   Some((
-		                       app.name.len() as u32 + 1,
-		                       app.name.len() as u32 + 1 + e.len() as u32,
-		                   )),
-		               );
-		               break
-		            }
-		        }
-        	}
-        	out
+            let mut out = (app.name.clone(), None);
+            for f in &config.extra_field {
+                if let Some(e) = get_app_field(&app, *f) {
+                    if !config.hide_extra_if_contained
+                        || !app.name.to_lowercase().contains(&e.to_lowercase())
+                    {
+                        out = (
+                            format!(
+                                "{}{}{}",
+                                app.name,
+                                if config.extra_field_newline {
+                                    "\n"
+                                } else {
+                                    " "
+                                },
+                                e
+                            ),
+                            Some((
+                                app.name.len() as u32 + 1,
+                                app.name.len() as u32 + 1 + e.len() as u32,
+                            )),
+                        );
+                        break;
+                    }
+                }
+            }
+            out
         } else {
-        	(app.name.clone(), None)
+            (app.name.clone(), None)
         };
 
         let hidden = config
@@ -227,7 +221,7 @@ pub fn load_entries(
         let search_string = if hidden.is_empty() {
             display_string.clone()
         } else {
-            format!("{} {}", display_string, hidden)
+            format!("{display_string} {hidden}")
         };
 
         let label = LabelBuilder::new()
@@ -241,15 +235,15 @@ pub fn load_entries(
 
         let image = ImageBuilder::new().pixel_size(config.icon_size).build();
         if let Some(ref icon) = app.icon {
-        	if let Ok(icon) = Icon::for_string(icon) {
-	            // Don't set the icon if it'd give us an ugly fallback icon
-	            if icon_theme
-	                .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
-	                .is_some()
-	            {
-	                image.set_from_gicon(&icon, gtk::IconSize::Menu);
-	            }
-	        }
+            if let Ok(icon) = Icon::for_string(icon) {
+                // Don't set the icon if it'd give us an ugly fallback icon
+                if icon_theme
+                    .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
+                    .is_some()
+                {
+                    image.set_from_gicon(&icon, gtk::IconSize::Menu);
+                }
+            }
         }
         image.style_context().add_class(APP_ICON_CLASS);
 
@@ -263,7 +257,10 @@ pub fn load_entries(
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
-        let history_data = history.get(&format!("{}.desktop", &app.id)).copied().unwrap_or_default();
+        let history_data = history
+            .get(&format!("{}.desktop", &app.id))
+            .copied()
+            .unwrap_or_default();
         let last_used = if config.recent_first {
             history_data.last_used
         } else {

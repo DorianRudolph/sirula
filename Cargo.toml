@@ -5,7 +5,6 @@ authors = ["Dorian Rudolph", "Jan Luca"]
 edition = "2021"
 
 [dependencies]
-freedesktop_entry_parser = "1.2.0"
 locale-types = "0.4.0"
 libc = "0.2.103"
 gtk-layer-shell = "0.4.1"
