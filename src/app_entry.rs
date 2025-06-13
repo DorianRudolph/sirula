@@ -207,7 +207,8 @@ pub fn load_entries(
 		                       app.name.len() as u32 + 1,
 		                       app.name.len() as u32 + 1 + e.len() as u32,
 		                   )),
-		               )
+		               );
+		               break
 		            }
 		        }
         	}

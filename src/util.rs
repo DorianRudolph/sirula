@@ -111,9 +111,13 @@ pub fn launch_app(info: &DesktopEntry, term_command: Option<&str>, launch_cgroup
         command = command_new;
     }
 
-    Command::new(&command[0])
-        .args(&command[1..])
-        .spawn()
+    let mut exec = Command::new(&command[0]);
+    let mut exec = exec.args(&command[1..]);
+    if let Some(dir) = &info.path {
+    	exec = exec.current_dir(dir)
+    }
+
+    exec.spawn()
         .expect("Error launching app");
 }
 
