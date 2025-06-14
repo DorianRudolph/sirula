@@ -37,9 +37,13 @@ macro_rules! make_config {
 #[derive(Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Field {
-    Comment,
     Id,
     IdSuffix,
+    Name,
+    GenericName,
+    Comment,
+    Categories,
+    Keywords,
     Executable,
     Commandline,
 }
@@ -74,7 +78,8 @@ make_config!(Config {
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
     term_command: Option<String> = (None) "term_command",
-    close_on_unfocus: bool = (true) "close_on_unfocus"
+    close_on_unfocus: bool = (true) "close_on_unfocus",
+    set_gpu_variable: Option<String> = (None) "set_gpu_variable"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
@@ -97,8 +102,8 @@ impl Config {
 }
 
 fn parse_attributes(markup: &str) -> Result<Vec<Attribute>, String> {
-    let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0')
-        .map_err(|err| format!("Failed to parse markup: {}", err))?;
+    let (attributes, _, _) = pango::parse_markup(&format!("<span {markup}>X</span>"), '\0')
+        .map_err(|err| format!("Failed to parse markup: {err}"))?;
     let mut iter = attributes.iterator().ok_or("Failed to parse markup")?;
     Ok(iter.attrs())
 }

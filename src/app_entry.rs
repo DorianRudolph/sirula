@@ -19,8 +19,8 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::locale::string_collate;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use gio::AppInfo;
-use glib::shell_unquote;
+// use gio::AppInfo;
+use gio::Icon;
 use gtk::{
     builders::{BoxBuilder, ImageBuilder, LabelBuilder},
     prelude::*,
@@ -33,12 +33,15 @@ use std::collections::HashMap;
 use super::{consts::*, Config, Field, HistoryData};
 use regex::RegexSet;
 
+pub mod desktop_entry;
+use desktop_entry::DesktopEntry;
+
 #[derive(Eq)]
 pub struct AppEntry {
     pub display_string: String,
     pub search_string: String,
     pub extra_range: Option<(u32, u32)>,
-    pub info: AppInfo,
+    pub info: DesktopEntry,
     pub label: Label,
     pub score: i64,
     pub history: HistoryData,
@@ -61,7 +64,6 @@ impl AppEntry {
 
             for i in indices {
                 if i < self.display_string.len() {
-                    let i = i as usize;
                     add_attrs(
                         &attr_list,
                         &config.markup_highlight,
@@ -129,24 +131,21 @@ impl PartialOrd for AppEntry {
     }
 }
 
-fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
+// TODO: clone
+fn get_app_field(app: &DesktopEntry, field: Field) -> Option<String> {
     match field {
-        Field::Comment => app.description().map(Into::into),
-        Field::Id => app
-            .id()
-            .and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
-        Field::IdSuffix => app.id().and_then(|id| {
-            let id = id.to_string();
-            let parts: Vec<&str> = id.split('.').collect();
-            parts.get(parts.len() - 2).map(|s| s.to_string())
-        }),
-        Field::Executable => app
-            .executable()
-            .file_name()
-            .and_then(|e| shell_unquote(e).ok())
-            .map(|s| s.to_string_lossy().to_string()),
-        //TODO: clean up command line from % for all what is not done in launch_app() in src/util.rx
-        Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()),
+        Field::Id => Some(app.id.clone()),
+        Field::IdSuffix => {
+            let parts: Vec<&str> = app.id.split('.').collect();
+            parts.last().map(|s| s.to_string())
+        }
+        Field::Name => Some(app.name.clone()),
+        Field::GenericName => app.generic_name.clone(),
+        Field::Comment => app.comment.clone(),
+        Field::Categories => app.categories.clone(),
+        Field::Keywords => app.keywords.clone(),
+        Field::Executable => app.exec.split_whitespace().next().map(|s| s.to_string()),
+        Field::Commandline => Some(app.exec.clone()),
     }
 }
 
@@ -165,57 +164,50 @@ pub fn load_entries(
 ) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
-    let apps = gio::AppInfo::all();
+    let apps = DesktopEntry::get();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
     for app in apps {
-        if !app.should_show() {
+        if exclude.is_match(&app.id) {
             continue;
         }
 
-        let name = app.display_name().to_string();
-
-        let id = match app.id() {
-            Some(id) => id.to_string(),
-            _ => continue,
-        };
-
-        if exclude.is_match(&id) {
-            continue;
-        }
-
-        let (display_string, extra_range) = if let Some(name) =
-            get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id))
-        {
+        let (display_string, extra_range) = if let Some(name) = config.name_overrides.get(&app.id) {
             let i = name.find('\r');
             (
                 name.replace('\r', " "),
                 i.map(|i| (i as u32 + 1, name.len() as u32)),
             )
-        } else {
-            let extra = config
-                .extra_field
-                .get(0)
-                .and_then(|f| get_app_field(&app, *f));
-            match extra {
-                Some(e)
-                    if (!config.hide_extra_if_contained
-                        || !name.to_lowercase().contains(&e.to_lowercase())) =>
-                {
-                    (
-                        format!("{}{}{}",
-                            name,
-                            if config.extra_field_newline {"\n"} else {" "},
-                            e
-                        ),
-                        Some((
-                            name.len() as u32 + 1,
-                            name.len() as u32 + 1 + e.len() as u32,
-                        )),
-                    )
+        } else if !config.extra_field.is_empty() {
+            let mut out = (app.name.clone(), None);
+            for f in &config.extra_field {
+                if let Some(e) = get_app_field(&app, *f) {
+                    if !config.hide_extra_if_contained
+                        || !app.name.to_lowercase().contains(&e.to_lowercase())
+                    {
+                        out = (
+                            format!(
+                                "{}{}{}",
+                                app.name,
+                                if config.extra_field_newline {
+                                    "\n"
+                                } else {
+                                    " "
+                                },
+                                e
+                            ),
+                            Some((
+                                app.name.len() as u32 + 1,
+                                app.name.len() as u32 + 1 + e.len() as u32,
+                            )),
+                        );
+                        break;
+                    }
                 }
-                _ => (name, None),
             }
+            out
+        } else {
+            (app.name.clone(), None) // TODO: clone
         };
 
         let hidden = config
@@ -228,7 +220,7 @@ pub fn load_entries(
         let search_string = if hidden.is_empty() {
             display_string.clone()
         } else {
-            format!("{} {}", display_string, hidden)
+            format!("{display_string} {hidden}")
         };
 
         let label = LabelBuilder::new()
@@ -241,13 +233,15 @@ pub fn load_entries(
         label.style_context().add_class(APP_LABEL_CLASS);
 
         let image = ImageBuilder::new().pixel_size(config.icon_size).build();
-        if let Some(icon) = app.icon() {
-            // Don't set the icon if it'd give us an ugly fallback icon
-            if icon_theme
-                .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
-                .is_some()
-            {
-                image.set_from_gicon(&icon, gtk::IconSize::Menu);
+        if let Some(ref icon) = app.icon {
+            if let Ok(icon) = Icon::for_string(icon) {
+                // Don't set the icon if it'd give us an ugly fallback icon
+                if icon_theme
+                    .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
+                    .is_some()
+                {
+                    image.set_from_gicon(&icon, gtk::IconSize::Menu);
+                }
             }
         }
         image.style_context().add_class(APP_ICON_CLASS);
@@ -262,7 +256,10 @@ pub fn load_entries(
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
-        let history_data = history.get(&id).copied().unwrap_or_default();
+        let history_data = history
+            .get(&format!("{}.desktop", &app.id))
+            .copied()
+            .unwrap_or_default();
         let last_used = if config.recent_first {
             history_data.last_used
         } else {

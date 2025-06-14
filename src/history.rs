@@ -25,14 +25,11 @@ pub fn load_history(days: u32) -> HashMap<String, HistoryData> {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards");
             let cutoff = epoch.as_secs() - (days as u64) * 86400;
-            let mut history = toml::from_str(&history_str)
-                .unwrap_or_else(|err| {
-                    eprintln!("Cannot parse history file: {}", err);
-                    HashMap::new()
-                });
-            history.retain(|_, data : &mut HistoryData| {
-                    days == 0 || data.last_used >= cutoff
+            let mut history = toml::from_str(&history_str).unwrap_or_else(|err| {
+                eprintln!("Cannot parse history file: {}", err);
+                HashMap::new()
             });
+            history.retain(|_, data: &mut HistoryData| days == 0 || data.last_used >= cutoff);
             return history;
         }
         _ => HashMap::new(),
