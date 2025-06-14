@@ -32,7 +32,6 @@ pub struct DesktopAction {
 }
 
 macro_rules! skip_none {
-    // TODO: add id
     ($res:expr, $id:expr) => {
         match $res {
             Some(val) => val,
@@ -133,7 +132,7 @@ impl DesktopEntry {
 fn get_exec_key(group: &Group) -> Option<String> {
     match get_key(group, "TryExec") {
         Some(try_exec) => match which(&try_exec) {
-            Ok(_) => Some(try_exec),
+            Ok(_) => get_key(group, "Exec").or(Some(try_exec)),
             Err(_) => None,
         },
         None => get_key(group, "Exec"),

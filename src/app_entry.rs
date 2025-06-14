@@ -131,7 +131,7 @@ impl PartialOrd for AppEntry {
     }
 }
 
-// TODO: get rid of the clones
+// TODO: clone
 fn get_app_field(app: &DesktopEntry, field: Field) -> Option<String> {
     match field {
         Field::Id => Some(app.id.clone()),
@@ -164,7 +164,6 @@ pub fn load_entries(
 ) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
-    // let apps = gio::AppInfo::all();
     let apps = DesktopEntry::get();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
@@ -208,7 +207,7 @@ pub fn load_entries(
             }
             out
         } else {
-            (app.name.clone(), None)
+            (app.name.clone(), None) // TODO: clone
         };
 
         let hidden = config
