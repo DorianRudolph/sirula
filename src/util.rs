@@ -73,7 +73,7 @@ pub fn launch_app(
     info: &DesktopEntry,
     term_command: Option<&str>,
     launch_cgroups: bool,
-    prefers_nondefault_gpu: Option<String>,
+    gpu_variable: Option<String>,
 ) {
     let replace_keys = [
         ("%U", ""), // link(s)
@@ -138,7 +138,7 @@ pub fn launch_app(
         exec = exec.current_dir(dir)
     }
     if info.prefers_nondefault_gpu {
-	    if let Some(prime) = prefers_nondefault_gpu {
+	    if let Some(prime) = gpu_variable {
 	        exec = exec.env(prime, "1")
 	    }
 	}
