@@ -137,9 +137,11 @@ pub fn launch_app(
     if let Some(dir) = &info.path {
         exec = exec.current_dir(dir)
     }
-    if let Some(prime) = prefers_nondefault_gpu {
-        exec = exec.env(prime, "1")
-    }
+    if info.prefers_nondefault_gpu {
+	    if let Some(prime) = prefers_nondefault_gpu {
+	        exec = exec.env(prime, "1")
+	    }
+	}
 
     exec.spawn().expect("Error launching app");
 }
