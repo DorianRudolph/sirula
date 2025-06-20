@@ -15,11 +15,12 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::consts::*;
-use super::util::get_config_file;
+use super::{consts::*, util::get_config_file};
+
 use pango::Attribute;
 use serde::{de::Error, Deserializer};
 use serde_derive::Deserialize;
+
 use std::collections::HashMap;
 
 macro_rules! make_config {

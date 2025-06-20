@@ -15,13 +15,17 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::app_entry::desktop_entry::DesktopEntry;
-use crate::consts::*;
+use crate::{app_entry::desktop_entry::DesktopEntry, consts::*};
+
 use glib::shell_parse_argv;
 use gtk::{prelude::CssProviderExt, CssProvider};
+use log::error;
 use shlex::Shlex;
-use std::path::PathBuf;
-use std::process::{id, Command};
+
+use std::{
+    path::PathBuf,
+    process::{id, Command},
+};
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -44,7 +48,7 @@ pub fn load_css() {
     if let Some(file) = get_config_file(STYLE_FILE) {
         let provider = CssProvider::new();
         if let Err(err) = provider.load_from_path(file.to_str().unwrap()) {
-            eprintln!("Failed to load CSS: {err}");
+            error!("Failed to load CSS: {err}");
         }
         gtk::StyleContext::add_provider_for_screen(
             &gdk::Screen::default().expect("Error initializing gtk css provider."),

@@ -17,6 +17,7 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use libc::{setlocale, strcoll};
 pub use locale_types::LocaleIdentifier;
+
 use std::{
     cmp::{Ord, Ordering},
     ffi::{CStr, CString},

@@ -17,9 +17,10 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use super::{consts::*, Config, Field, HistoryData};
 use crate::locale::string_collate;
+
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-// use gio::AppInfo;
 use gio::Icon;
 use gtk::{
     builders::{BoxBuilder, ImageBuilder, LabelBuilder},
@@ -27,11 +28,9 @@ use gtk::{
     IconLookupFlags, IconTheme, Label, ListBoxRow, Orientation,
 };
 use pango::{AttrList, Attribute, EllipsizeMode};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-
-use super::{consts::*, Config, Field, HistoryData};
 use regex::RegexSet;
+
+use std::{cmp::Ordering, collections::HashMap};
 
 pub mod desktop_entry;
 use desktop_entry::DesktopEntry;

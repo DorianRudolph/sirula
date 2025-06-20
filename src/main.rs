@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use env_logger::Builder;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
 use gio::prelude::*;
@@ -24,8 +25,9 @@ use gtk::{
     ListBoxRow,
 };
 use libc::LC_ALL;
-use std::env::args;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use log::{error, info, warn};
+
+use std::{cell::RefCell, collections::HashMap, env::args, rc::Rc};
 
 mod consts;
 use consts::*;
@@ -207,6 +209,9 @@ fn app_startup(application: &gtk::Application) {
 }
 
 fn main() {
+    Builder::from_env("SIRULA_LOG").init();
+    info!("sirula {}", env!("CARGO_PKG_VERSION"));
+
     set_locale(LC_ALL, "");
 
     let application = gtk::Application::new(Some(APP_ID), Default::default());

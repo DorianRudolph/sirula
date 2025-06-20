@@ -1,4 +1,5 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
+use log::{debug, error, warn};
 use which::which;
 
 use std::{collections::HashMap, env::var, path::PathBuf};
@@ -36,7 +37,7 @@ macro_rules! skip_none {
         match $res {
             Some(val) => val,
             None => {
-                println!("skipping: {} (missing/wrong values)", $id);
+                error!("skipping: {} (missing/wrong values)", $id);
                 continue;
             }
         }
@@ -53,7 +54,7 @@ impl DesktopEntry {
         let mut out = HashMap::new();
         let xdg_current_desktop = var("XDG_CURRENT_DESKTOP");
         if let Err(e) = &xdg_current_desktop {
-            println!("XDG_CURRENT_DESKTOP env variable can't be read! {}", e);
+            warn!("XDG_CURRENT_DESKTOP env variable can't be read! {e}");
         }
 
         for entry in entries.into_iter().rev() {
@@ -84,7 +85,7 @@ impl DesktopEntry {
                     }
                 };
                 if not_show_in || only_show_in || hidden || nodisplay {
-                    println!("skipping: {} (hidden)", &id);
+                    debug!("skipping: {} (hidden)", &id);
                     continue;
                 }
             }
@@ -122,7 +123,7 @@ impl DesktopEntry {
             };
 
             if let Some(app_entry) = out.insert(id, app_entry) {
-                println!("skipping: {} (overwritten)", app_entry.id)
+                debug!("skipping: {} (overwritten)", app_entry.id)
             }
         }
         out.into_values().collect()
