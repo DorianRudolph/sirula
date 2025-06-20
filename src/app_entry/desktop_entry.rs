@@ -1,5 +1,5 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
-use log::{debug, error, warn};
+use log::{info, error, warn};
 use which::which;
 
 use std::{collections::HashMap, env::var, path::PathBuf};
@@ -85,7 +85,7 @@ impl DesktopEntry {
                     }
                 };
                 if not_show_in || only_show_in || hidden || nodisplay {
-                    debug!("skipping: {} (hidden)", &id);
+                    info!("skipping: {} (hidden)", &id);
                     continue;
                 }
             }
@@ -123,7 +123,7 @@ impl DesktopEntry {
             };
 
             if let Some(app_entry) = out.insert(id, app_entry) {
-                debug!("skipping: {} (overwritten)", app_entry.id)
+                info!("skipping: {} (overwritten)", app_entry.id)
             }
         }
         out.into_values().collect()
