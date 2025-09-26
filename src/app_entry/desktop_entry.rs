@@ -1,9 +1,15 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
 use log::{info, error, warn};
 use which::which;
+use shlex::Shlex;
 
-use std::{collections::HashMap, env::var, path::PathBuf};
-
+use std::{
+	collections::HashMap,
+	env::var,
+	path::PathBuf,
+    process::{id, Command, Child},
+    error::Error,
+};
 pub struct DesktopEntry {
     pub id: String,
     #[allow(dead_code)]
@@ -28,6 +34,7 @@ pub struct DesktopEntry {
 
 #[allow(dead_code)]
 pub struct DesktopAction {
+	pub id: String,
     pub name: String,
     pub exec: String,
 }
@@ -91,14 +98,18 @@ impl DesktopEntry {
             }
             let mut actions = Vec::new();
 
-            for desktop_action in entry.groups.0.iter() {
-                if desktop_action.0.starts_with("Desktop Action ") {
-                    let action = desktop_action.1;
-                    actions.push(DesktopAction {
-                        name: skip_none!(get_key(action, "Name"), id),
-                        exec: skip_none!(get_exec_key(action), id),
-                    })
-                }
+           	if let Some(strx) = get_key(desktop_entry, "Actions") {
+            	let fields: Vec<&str> = strx.split(';').collect();
+            	for field in fields {
+            		if let Some(desktop_action) = entry.groups.0.iter().find(|x| x.0 == &format!("Desktop Action {field}")) {
+	                    let action = desktop_action.1;
+	                    actions.push(DesktopAction {
+	                    	id: field.to_string(),
+	                    	name: skip_none!(get_key(action, "Name"), id),
+	                    	exec: skip_none!(get_exec_key(action), id),
+	                    });
+	            	}
+            	}
             }
 
             let app_entry = DesktopEntry {
@@ -128,6 +139,117 @@ impl DesktopEntry {
         }
         out.into_values().collect()
     }
+    // pub fn get_command(x: Option<String>) -> Vec<String> {}
+    pub fn launch(&self,
+    	child: Option<String>,
+	    term_command: Option<&str>,
+	    launch_cgroups: bool,
+	    gpu_variable: Option<String>,
+	) -> Result<Child, Box<dyn std::error::Error>> {
+	    let replace_keys = [
+	        ("%U", ""), // link(s)
+	        ("%u", ""),
+	        ("%F", ""), // files(s)
+	        ("%f", ""),
+	        ("%D", ""), // Deprecated
+	        ("%d", ""),
+	        ("%N", ""),
+	        ("%n", ""),
+	        ("%v", ""),
+	        ("%m", ""),
+	        ("%i", &self.icon.clone().unwrap_or_default()), // icon
+	        ("%c", &self.name),                             // name (translated)
+	        ("%k", self.file.to_str().unwrap_or_default()), // filename as uri > file > none
+	    ];
+
+	    let mut command_string = if let Some(child) = child {
+	    	let mut out = None;
+	    	for action in &self.actions {
+	    		if action.id == child {
+	    			out = Some(action.exec.clone())
+	    		}
+	    	}
+	   		if let Some(exec) = out {
+	   			exec
+	   		} else {
+	   			return Err(format!("unknown action \"{child}\"").into())
+	   		}
+	    } else {
+	    	self.exec.clone()
+	    };
+	    for replace_key in replace_keys {
+	        command_string = command_string.replace(replace_key.0, replace_key.1)
+	    }
+	    let mut command: Vec<String> = Shlex::new(&command_string).collect();
+
+	    if self.terminal {
+	        if let Some(term) = term_command {
+	            let command_string = term.to_string().replace("{}", &command_string);
+	            command = Shlex::new(&command_string).collect();
+	        } else if let Some(term) = std::env::var_os("TERMINAL") {
+	            let term = match term.into_string() {
+	            	Ok(s) => s,
+	            	Err(_e) => return Err("invalid TERMINAL, couldn't convert".into()),
+	            };
+	            let mut command_new = vec![term, "-e".into()];
+	            command_new.extend(command);
+	            command = command_new;
+	        } else {
+	            return Err("couldn't find terminal".into()); // TODO: return correct error
+	        };
+	    }
+	    if launch_cgroups {
+	        let parsed = systemd_escape(&self.id);
+	        let unit = format!(
+	            "--unit=app-sirula-{}-{}",
+	            parsed?,
+	            id()
+	        );
+	        let mut command_new: Vec<String> = vec![
+	            "systemd-run".into(),
+	            "--scope".into(),
+	            "--user".into(),
+	            unit,
+	        ];
+	        command_new.extend(command);
+	        command = command_new;
+	    }
+	
+	    let mut exec = Command::new(&command[0]);
+	    let mut exec = exec.args(&command[1..]);
+	    if let Some(dir) = &self.path {
+	        exec = exec.current_dir(dir)
+	    }
+	    if self.prefers_nondefault_gpu {
+	        if let Some(prime) = gpu_variable {
+	            exec = exec.env(prime, "1")
+	        }
+	    }
+	
+	    Ok(exec.spawn()?)
+	}
+}
+
+pub fn systemd_escape(string: &String) -> Result<String, Box<dyn Error>> {
+	let string = string.as_bytes();
+	let mut out: Vec<u8> = Vec::with_capacity(string.len());
+	let mut first = true;
+	for s in string {
+		let mut s: Vec<u8> = s.escape_ascii().collect();
+		if first {
+			if s[0] == b'.' {
+				s = r"\x2e".as_bytes().into()
+			}
+			first = false;
+		}
+		if s[0] == b'-' {
+			s = r"\x2d".as_bytes().into()
+		} else if s[0] == b'/' {
+			s[0] = b'-'
+		}
+		out.append(&mut s)
+	}
+	Ok(String::from_utf8(out)?)
 }
 
 fn get_exec_key(group: &Group) -> Option<String> {

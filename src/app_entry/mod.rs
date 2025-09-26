@@ -18,12 +18,12 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use super::{consts::*, Config, Field, HistoryData};
-use crate::locale::string_collate;
+use crate::{locale::string_collate, clone};
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use gio::Icon;
 use gtk::{
-    builders::{BoxBuilder, ImageBuilder, LabelBuilder},
+    builders::{BoxBuilder, ImageBuilder, LabelBuilder, ListBoxBuilder},
     prelude::*,
     IconLookupFlags, IconTheme, Label, ListBoxRow, Orientation,
 };
@@ -245,14 +245,57 @@ pub fn load_entries(
         }
         image.style_context().add_class(APP_ICON_CLASS);
 
+        let vbox = BoxBuilder::new()
+            .orientation(Orientation::Vertical)
+            .build();
+
         let hbox = BoxBuilder::new()
             .orientation(Orientation::Horizontal)
             .build();
         hbox.pack_start(&image, false, false, 0);
         hbox.pack_end(&label, true, true, 0);
 
+        vbox.pack_start(&hbox, false, false, 0);
         let row = ListBoxRow::new();
-        row.add(&hbox);
+
+        if !app.actions.is_empty() {
+        	let actions_box = ListBoxBuilder::new().build();
+			vbox.pack_end(&actions_box, false, false, 0);
+            for action in app.actions.iter() {
+            	let row = ListBoxRow::new();
+	        	let label = LabelBuilder::new()
+	        		.xalign(0.0f32)
+	        		.label(&action.name)
+	        		.wrap(true)
+	        		.build();
+	        	row.add(&label);
+   		        actions_box.insert(&row, 999);
+   		        let name = action.name.clone();
+	        	row.connect_activate(move |e| {
+	        		// TODO: upgrade stuff
+   		        	// if let Some(parent) = &row.parent() {
+   		        	// 	let parent = parent.downgrade();
+   		        	// 	if let Some(parent) = parent.upgrade() {
+   		        	// 		parent.info.run(Some(&action.name))
+   		        	// 	}
+   		        	// }
+   		        	println!("activated {}", name);
+   		        });
+	        }
+	        // row.connect_key_press_event(move |row, event| {
+	        // 	// use crate::constants::*;
+		       //  // #[allow(non_upper_case_globals)]
+	        // 	// Inhibit(match event.keyval() {
+	        // 	// 	Right => { actions_box.grab_focus(); false },
+	        // 	// 	_ => false,
+	        // 	// })
+	        // 	println!("helllo");
+	        // 	gtk::Inhibit(false)
+	        // });
+	        
+	    }
+
+        row.add(&vbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
         let history_data = history
