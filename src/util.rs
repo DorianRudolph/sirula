@@ -17,9 +17,11 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::consts::*;
 use freedesktop_entry_parser::parse_entry;
-use gio::{prelude::AppInfoExt, AppInfo};
 use glib::{shell_parse_argv, GString, ObjectExt};
-use gtk::{prelude::CssProviderExt, CssProvider};
+use gtk::{
+     gio::{prelude::AppInfoExt, AppInfo},
+    {prelude::CssProviderExt, CssProvider},
+};
 use std::path::PathBuf;
 use std::process::{id, Command};
 use shlex::Shlex;
@@ -96,12 +98,12 @@ pub fn launch_app(info: &AppInfo, term_command: Option<&str>, launch_cgroups: bo
     {
         if let Some(term) = term_command {
             let command_string = term.to_string().replace("{}", &command_string);
-		    command = Shlex::new(&command_string).collect();
+            command = Shlex::new(&command_string).collect();
         } else if let Some(term) = std::env::var_os("TERMINAL") {
-        	let term = term.into_string().expect("couldn't convert to string");
-        	let mut command_new = vec![term, "-e".into()];
-        	command_new.extend(command);
-        	command = command_new;
+            let term = term.into_string().expect("couldn't convert to string");
+            let mut command_new = vec![term, "-e".into()];
+            command_new.extend(command);
+            command = command_new;
         } else {
             return;
         };
