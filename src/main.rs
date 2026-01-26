@@ -128,7 +128,7 @@ fn app_startup(application: &gtk::Application) {
                 }
                 false
             },
-            Up | Down | Right | Left | KP_Up | KP_Down | Page_Up | Page_Down | KP_Page_Up | KP_Page_Down | Tab
+            Up | Down | KP_Up | KP_Down | Page_Up | Page_Down | KP_Page_Up | KP_Page_Down | Tab
             | Shift_L | Shift_R | Control_L | Control_R | Alt_L | Alt_R | ISO_Left_Tab | Return
             | KP_Enter => false,
             _ => {
@@ -167,30 +167,30 @@ fn app_startup(application: &gtk::Application) {
         listbox.select_row(listbox.row_at_index(0).as_ref());
     }));
 
-    // entry.connect_activate(clone!(listbox, window => move |e| {
-    //     let text = e.text();
-    //     if is_cmd(&text, &cmd_prefix) { // command execution direct
-    //         let cmd_line = &text[cmd_prefix.len()..].trim();
-    //         launch_cmd(cmd_line);
-    //         window.close();
-    //     } else if let Some(row) = listbox.row_at_index(0) {
-    //         row.activate();
-    //     }
-    // }));
+    entry.connect_activate(clone!(listbox, window => move |e| {
+        let text = e.text();
+        if is_cmd(&text, &cmd_prefix) { // command execution direct
+            let cmd_line = &text[cmd_prefix.len()..].trim();
+            launch_cmd(cmd_line);
+            window.close();
+        } else if let Some(row) = listbox.row_at_index(0) {
+            row.activate();
+        }
+    }));
 
-//     listbox.connect_row_activated(clone!(entries, window, history => move |_, r| {
-//         let es = entries.borrow();
-//         let e = &es[r];
-//         if !e.hidden() {
-//             launch_app(&e.info, term_command.as_deref(), launch_cgroups, gpu_var.clone());
-// 
-//             let mut history = history.borrow_mut();
-//             update_history(&mut history, &format!("{}.desktop", e.info.id));
-//             save_history(&history);
-// 
-//             window.close();
-//         }
-//     }));
+    listbox.connect_row_activated(clone!(entries, window, history => move |_, r| {
+        let es = entries.borrow();
+        let e = &es[r];
+        if !e.hidden() {
+            launch_app(&e.info, term_command.as_deref(), launch_cgroups, gpu_var.clone());
+
+            let mut history = history.borrow_mut();
+            update_history(&mut history, &format!("{}.desktop", e.info.id));
+            save_history(&history);
+
+            window.close();
+        }
+    }));
 
     listbox.set_filter_func(Some(Box::new(clone!(entries => move |r| {
         let e = entries.borrow();

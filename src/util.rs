@@ -92,7 +92,7 @@ pub fn launch_app(
         ("%m", ""),
         ("%i", &info.icon.clone().unwrap_or_default()), // icon
         ("%c", &info.name),                             // name (translated)
-        ("%k", info.file.to_str().unwrap()),                             // filename as uri > file > none
+        ("%k", ""),                                     // filename as uri > file > none
     ];
     let mut command_string = info.exec.clone();
     for replace_key in replace_keys {
@@ -116,10 +116,14 @@ pub fn launch_app(
     if launch_cgroups {
         // TODO: clone
         // info.id.clone().truncate(info.id.len() - ".desktop".len()); // remove .desktop extension
-        let parsed = systemd_escape(&info.id);
+        let parsed = Command::new("systemd-escape")
+            .arg(&info.id)
+            .output()
+            .unwrap()
+            .stdout;
         let unit = format!(
             "--unit=app-sirula-{}-{}",
-            parsed,
+            String::from_utf8_lossy(&parsed).trim(),
             id()
         );
         let mut command_new: Vec<String> = vec![
@@ -144,28 +148,6 @@ pub fn launch_app(
     }
 
     exec.spawn().expect("Error launching app");
-}
-
-pub fn systemd_escape(string: &String) -> String {
-	let string = string.as_bytes();
-	let mut out: Vec<u8> = Vec::with_capacity(string.len());
-	let mut first = true;
-	for s in string {
-		let mut s: Vec<u8> = s.escape_ascii().collect();
-		if s[0] == b'-' {
-			s = r"\x2d".as_bytes().into()
-		} else if s[0] == b'/' {
-			s[0] = b'-'
-		} else if first {
-			if s[0] == b'.' {
-				s = r"\x2e".as_bytes().into()
-			}
-			first = false;
-		}
-		first = false;
-		out.append(&mut s)
-	}
-	String::from_utf8(out).unwrap()
 }
 
 #[macro_export]
