@@ -130,7 +130,6 @@ impl PartialOrd for AppEntry {
     }
 }
 
-// TODO: clone
 fn get_app_field(app: &DesktopEntry, field: Field) -> Option<&str> {
     match field {
         Field::Id => Some(&app.id),
@@ -178,13 +177,13 @@ pub fn load_entries(
                 i.map(|i| (i as u32 + 1, name.len() as u32)),
             )
         } else if !config.extra_field.is_empty() {
-            let mut out = (app.name.clone(), None);
+            let mut out = None;
             for f in &config.extra_field {
                 if let Some(e) = get_app_field(&app, *f) {
                     if !config.hide_extra_if_contained
                         || !app.name.to_lowercase().contains(&e.to_lowercase())
                     {
-                        out = (
+                        out = Some((
                             format!(
                                 "{}{}{}",
                                 app.name,
@@ -199,14 +198,14 @@ pub fn load_entries(
                                 app.name.len() as u32 + 1,
                                 app.name.len() as u32 + 1 + e.len() as u32,
                             )),
-                        );
+                        ));
                         break;
                     }
                 }
             }
-            out
+            out.unwrap_or((app.name.clone(), None))
         } else {
-            (app.name.clone(), None) // TODO: clone
+            (app.name.clone(), None)
         };
 
         let hidden = config

@@ -125,6 +125,7 @@ impl DesktopEntry {
             };
 
             if let Some(app_entry) = out.insert(app_entry.id.clone(), app_entry) {
+                // TODO: clone
                 info!("skipping: {} (overwritten)", &app_entry.id)
             }
         }
@@ -171,8 +172,6 @@ impl DesktopEntry {
             };
         }
         if launch_cgroups {
-            // TODO: clone
-            // info.id.clone().truncate(info.id.len() - ".desktop".len()); // remove .desktop extension
             let parsed = Command::new("systemd-escape")
                 .arg(&self.id)
                 .output()
