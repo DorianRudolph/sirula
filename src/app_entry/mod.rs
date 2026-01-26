@@ -131,20 +131,20 @@ impl PartialOrd for AppEntry {
 }
 
 // TODO: clone
-fn get_app_field(app: &DesktopEntry, field: Field) -> Option<String> {
+fn get_app_field(app: &DesktopEntry, field: Field) -> Option<&str> {
     match field {
-        Field::Id => Some(app.id.clone()),
+        Field::Id => Some(&app.id),
         Field::IdSuffix => {
             let parts: Vec<&str> = app.id.split('.').collect();
-            parts.last().map(|s| s.to_string())
+            parts.last().map(|v| &**v)
         }
-        Field::Name => Some(app.name.clone()),
-        Field::GenericName => app.generic_name.clone(),
-        Field::Comment => app.comment.clone(),
-        Field::Categories => app.categories.clone(),
-        Field::Keywords => app.keywords.clone(),
-        Field::Executable => app.exec.split_whitespace().next().map(|s| s.to_string()),
-        Field::Commandline => Some(app.exec.clone()),
+        Field::Name => Some(&app.name),
+        Field::GenericName => app.generic_name.as_deref(),
+        Field::Comment => app.comment.as_deref(),
+        Field::Categories => app.categories.as_deref(),
+        Field::Keywords => app.keywords.as_deref(),
+        Field::Executable => app.exec.split_whitespace().next(),
+        Field::Commandline => Some(&app.exec),
     }
 }
 
@@ -213,6 +213,7 @@ pub fn load_entries(
             .hidden_fields
             .iter()
             .map(|f| get_app_field(&app, *f).unwrap_or_default())
+            .map(|v| v.to_string())
             .collect::<Vec<String>>()
             .join(" ");
 
