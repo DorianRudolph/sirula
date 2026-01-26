@@ -33,7 +33,7 @@ height = -1
 close_on_unfocus = true
 
 # specify extra field to be displayed alongside the name (may be empty)
-extra_field = ["comment"] # variants: id, id_suffix, name, genericname, comment, categories, keyworks, executable, command_line
+extra_field = ["id_suffix"] # variants: id, id_suffix, name, generic_name, comment, categories, keywords, executable, commandline
 extra_field_newline = true # show extra field under name and not alongside
 hide_extra_if_contained = true # hide extra field if it is already contained in the app name
 
