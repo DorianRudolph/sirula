@@ -1,9 +1,14 @@
 use super::util::get_history_file;
+
+use log::error;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::Write;
-use std::time::{SystemTime, UNIX_EPOCH};
+
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Copy, Clone, Default, Eq, Deserialize, Serialize)]
 pub struct HistoryData {
@@ -25,15 +30,12 @@ pub fn load_history(days: u32) -> HashMap<String, HistoryData> {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards");
             let cutoff = epoch.as_secs() - (days as u64) * 86400;
-            let mut history = toml::from_str(&history_str)
-                .unwrap_or_else(|err| {
-                    eprintln!("Cannot parse history file: {}", err);
-                    HashMap::new()
-                });
-            history.retain(|_, data : &mut HistoryData| {
-                    days == 0 || data.last_used >= cutoff
+            let mut history = toml::from_str(&history_str).unwrap_or_else(|err| {
+                error!("Cannot parse history file: {err}");
+                HashMap::new()
             });
-            return history;
+            history.retain(|_, data: &mut HistoryData| days == 0 || data.last_used >= cutoff);
+            history
         }
         _ => HashMap::new(),
     }

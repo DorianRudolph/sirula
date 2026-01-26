@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use env_logger::Builder;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
 use gio::prelude::*;
@@ -24,8 +25,9 @@ use gtk::{
     ListBoxRow,
 };
 use libc::LC_ALL;
-use std::env::args;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use log::info;
+
+use std::{cell::RefCell, collections::HashMap, env::args, rc::Rc};
 
 mod consts;
 use consts::*;
@@ -49,6 +51,7 @@ fn app_startup(application: &gtk::Application) {
     let config = Config::load();
     let launch_cgroups = config.cgroups;
     let cmd_prefix = config.command_prefix.clone();
+    let gpu_var = config.set_gpu_variable.clone();
 
     let window = gtk::ApplicationWindow::new(application);
     window.set_size_request(config.width, config.height);
@@ -137,11 +140,11 @@ fn app_startup(application: &gtk::Application) {
         })
     }));
 
-	if config.close_on_unfocus {
-	    window.connect_focus_out_event(|window, _| {
-    	    window.close();
-    	    Inhibit(false)
-    	});
+    if config.close_on_unfocus {
+        window.connect_focus_out_event(|window, _| {
+            window.close();
+            Inhibit(false)
+        });
     }
 
     let matcher = SkimMatcherV2::default();
@@ -179,10 +182,10 @@ fn app_startup(application: &gtk::Application) {
         let es = entries.borrow();
         let e = &es[r];
         if !e.hidden() {
-            launch_app(&e.info, term_command.as_deref(), launch_cgroups);
+            e.info.run(term_command.as_deref(), launch_cgroups, gpu_var.clone());
 
             let mut history = history.borrow_mut();
-            update_history(&mut history, e.info.id().unwrap().as_str());
+            update_history(&mut history, &format!("{}.desktop", e.info.id));
             save_history(&history);
 
             window.close();
@@ -206,6 +209,9 @@ fn app_startup(application: &gtk::Application) {
 }
 
 fn main() {
+    Builder::from_env("SIRULA_LOG").init();
+    info!("sirula {}", env!("CARGO_PKG_VERSION"));
+
     set_locale(LC_ALL, "");
 
     let application = gtk::Application::new(Some(APP_ID), Default::default());

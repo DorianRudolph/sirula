@@ -17,28 +17,30 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use super::{consts::*, Config, Field, HistoryData};
 use crate::locale::string_collate;
+
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-use gio::AppInfo;
-use glib::shell_unquote;
+use gio::Icon;
 use gtk::{
     builders::{BoxBuilder, ImageBuilder, LabelBuilder},
     prelude::*,
     IconLookupFlags, IconTheme, Label, ListBoxRow, Orientation,
 };
 use pango::{AttrList, Attribute, EllipsizeMode};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-
-use super::{consts::*, Config, Field, HistoryData};
 use regex::RegexSet;
+
+use std::{cmp::Ordering, collections::HashMap};
+
+pub mod desktop_entry;
+use desktop_entry::DesktopEntry;
 
 #[derive(Eq)]
 pub struct AppEntry {
     pub display_string: String,
     pub search_string: String,
     pub extra_range: Option<(u32, u32)>,
-    pub info: AppInfo,
+    pub info: DesktopEntry,
     pub label: Label,
     pub score: i64,
     pub history: HistoryData,
@@ -61,7 +63,6 @@ impl AppEntry {
 
             for i in indices {
                 if i < self.display_string.len() {
-                    let i = i as usize;
                     add_attrs(
                         &attr_list,
                         &config.markup_highlight,
@@ -129,24 +130,20 @@ impl PartialOrd for AppEntry {
     }
 }
 
-fn get_app_field(app: &AppInfo, field: Field) -> Option<String> {
+fn get_app_field(app: &DesktopEntry, field: Field) -> Option<&str> {
     match field {
-        Field::Comment => app.description().map(Into::into),
-        Field::Id => app
-            .id()
-            .and_then(|s| s.to_string().strip_suffix(".desktop").map(Into::into)),
-        Field::IdSuffix => app.id().and_then(|id| {
-            let id = id.to_string();
-            let parts: Vec<&str> = id.split('.').collect();
-            parts.get(parts.len() - 2).map(|s| s.to_string())
-        }),
-        Field::Executable => app
-            .executable()
-            .file_name()
-            .and_then(|e| shell_unquote(e).ok())
-            .map(|s| s.to_string_lossy().to_string()),
-        //TODO: clean up command line from % for all what is not done in launch_app() in src/util.rx
-        Field::Commandline => app.commandline().map(|s| s.to_string_lossy().to_string()),
+        Field::Id => Some(&app.id),
+        Field::IdSuffix => {
+            let parts: Vec<&str> = app.id.split('.').collect();
+            parts.last().map(|v| &**v)
+        }
+        Field::Name => Some(&app.name),
+        Field::GenericName => app.generic_name.as_deref(),
+        Field::Comment => app.comment.as_deref(),
+        Field::Categories => app.categories.as_deref(),
+        Field::Keywords => app.keywords.as_deref(),
+        Field::Executable => app.exec.split_whitespace().next(),
+        Field::Commandline => Some(&app.exec),
     }
 }
 
@@ -165,70 +162,64 @@ pub fn load_entries(
 ) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
-    let apps = gio::AppInfo::all();
+    let apps = DesktopEntry::get();
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
     for app in apps {
-        if !app.should_show() {
+        if exclude.is_match(&app.id) {
             continue;
         }
 
-        let name = app.display_name().to_string();
-
-        let id = match app.id() {
-            Some(id) => id.to_string(),
-            _ => continue,
-        };
-
-        if exclude.is_match(&id) {
-            continue;
-        }
-
-        let (display_string, extra_range) = if let Some(name) =
-            get_app_field(&app, Field::Id).and_then(|id| config.name_overrides.get(&id))
-        {
+        let (display_string, extra_range) = if let Some(name) = config.name_overrides.get(&app.id) {
             let i = name.find('\r');
             (
                 name.replace('\r', " "),
                 i.map(|i| (i as u32 + 1, name.len() as u32)),
             )
-        } else {
-            let extra = config
-                .extra_field
-                .get(0)
-                .and_then(|f| get_app_field(&app, *f));
-            match extra {
-                Some(e)
-                    if (!config.hide_extra_if_contained
-                        || !name.to_lowercase().contains(&e.to_lowercase())) =>
-                {
-                    (
-                        format!("{}{}{}",
-                            name,
-                            if config.extra_field_newline {"\n"} else {" "},
-                            e
-                        ),
-                        Some((
-                            name.len() as u32 + 1,
-                            name.len() as u32 + 1 + e.len() as u32,
-                        )),
-                    )
+        } else if !config.extra_field.is_empty() {
+            let mut out = None;
+            for f in &config.extra_field {
+                if let Some(e) = get_app_field(&app, *f) {
+                    if !config.hide_extra_if_contained
+                        || !app.name.to_lowercase().contains(&e.to_lowercase())
+                    {
+                        out = Some((
+                            format!(
+                                "{}{}{}",
+                                app.name,
+                                if config.extra_field_newline {
+                                    "\n"
+                                } else {
+                                    " "
+                                },
+                                e
+                            ),
+                            Some((
+                                app.name.len() as u32 + 1,
+                                app.name.len() as u32 + 1 + e.len() as u32,
+                            )),
+                        ));
+                        break;
+                    }
                 }
-                _ => (name, None),
             }
+            out.unwrap_or((app.name.clone(), None))
+        } else {
+            (app.name.clone(), None)
         };
 
         let hidden = config
             .hidden_fields
             .iter()
             .map(|f| get_app_field(&app, *f).unwrap_or_default())
+            .map(|v| v.to_string())
             .collect::<Vec<String>>()
             .join(" ");
 
         let search_string = if hidden.is_empty() {
             display_string.clone()
         } else {
-            format!("{} {}", display_string, hidden)
+            format!("{display_string} {hidden}")
         };
 
         let label = LabelBuilder::new()
@@ -241,13 +232,15 @@ pub fn load_entries(
         label.style_context().add_class(APP_LABEL_CLASS);
 
         let image = ImageBuilder::new().pixel_size(config.icon_size).build();
-        if let Some(icon) = app.icon() {
-            // Don't set the icon if it'd give us an ugly fallback icon
-            if icon_theme
-                .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
-                .is_some()
-            {
-                image.set_from_gicon(&icon, gtk::IconSize::Menu);
+        if let Some(ref icon) = app.icon {
+            if let Ok(icon) = Icon::for_string(icon) {
+                // Don't set the icon if it'd give us an ugly fallback icon
+                if icon_theme
+                    .lookup_by_gicon(&icon, config.icon_size, IconLookupFlags::FORCE_SIZE)
+                    .is_some()
+                {
+                    image.set_from_gicon(&icon, gtk::IconSize::Menu);
+                }
             }
         }
         image.style_context().add_class(APP_ICON_CLASS);
@@ -262,7 +255,10 @@ pub fn load_entries(
         row.add(&hbox);
         row.style_context().add_class(APP_ROW_CLASS);
 
-        let history_data = history.get(&id).copied().unwrap_or_default();
+        let history_data = history
+            .get(&format!("{}.desktop", &app.id))
+            .copied()
+            .unwrap_or_default();
         let last_used = if config.recent_first {
             history_data.last_used
         } else {

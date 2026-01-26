@@ -15,11 +15,12 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::consts::*;
-use super::util::get_config_file;
+use super::{consts::*, util::get_config_file};
+
 use pango::Attribute;
 use serde::{de::Error, Deserializer};
 use serde_derive::Deserialize;
+
 use std::collections::HashMap;
 
 macro_rules! make_config {
@@ -37,9 +38,13 @@ macro_rules! make_config {
 #[derive(Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Field {
-    Comment,
     Id,
     IdSuffix,
+    Name,
+    GenericName,
+    Comment,
+    Categories,
+    Keywords,
     Executable,
     Commandline,
 }
@@ -65,16 +70,17 @@ make_config!(Config {
     anchor_bottom: bool = (true) "anchor_bottom",
     width: i32 = (-1) "width",
     height: i32 = (-1) "height",
-    extra_field: Vec<Field> = (vec![Field::IdSuffix]) "extra_field",
-    extra_field_newline: bool = (false) "extra_field_newline",
-    hidden_fields: Vec<Field> = (Vec::new()) "hidden_fields",
+    extra_field: Vec<Field> = (vec![Field::Comment]) "extra_field",
+    extra_field_newline: bool = (true) "extra_field_newline",
+    hidden_fields: Vec<Field> = (vec![Field::Keywords, Field::Categories]) "hidden_fields",
     name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
     hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
     cgroups: bool = (true) "cgroups",
     command_prefix: String = (":".into()) "command_prefix",
     exclude: Vec<String> = (Vec::new()) "exclude",
     term_command: Option<String> = (None) "term_command",
-    close_on_unfocus: bool = (true) "close_on_unfocus"
+    close_on_unfocus: bool = (true) "close_on_unfocus",
+    set_gpu_variable: Option<String> = (None) "set_gpu_variable"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
@@ -97,8 +103,8 @@ impl Config {
 }
 
 fn parse_attributes(markup: &str) -> Result<Vec<Attribute>, String> {
-    let (attributes, _, _) = pango::parse_markup(&format!("<span {}>X</span>", markup), '\0')
-        .map_err(|err| format!("Failed to parse markup: {}", err))?;
+    let (attributes, _, _) = pango::parse_markup(&format!("<span {markup}>X</span>"), '\0')
+        .map_err(|err| format!("Failed to parse markup: {err}"))?;
     let mut iter = attributes.iterator().ok_or("Failed to parse markup")?;
     Ok(iter.attrs())
 }
