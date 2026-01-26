@@ -15,17 +15,13 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::{app_entry::desktop_entry::DesktopEntry, consts::*};
+use crate::consts::*;
 
 use glib::shell_parse_argv;
 use gtk::{prelude::CssProviderExt, CssProvider};
 use log::error;
-use shlex::Shlex;
 
-use std::{
-    path::PathBuf,
-    process::{id, Command},
-};
+use std::{path::PathBuf, process::Command};
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -71,83 +67,6 @@ pub fn launch_cmd(cmd_line: &str) {
     let mut child = Command::new(cmd);
     child.args(parts_iter);
     child.spawn().expect("Error spawning command");
-}
-
-pub fn launch_app(
-    info: &DesktopEntry,
-    term_command: Option<&str>,
-    launch_cgroups: bool,
-    gpu_variable: Option<String>,
-) {
-    let replace_keys = [
-        ("%U", ""), // link(s)
-        ("%u", ""),
-        ("%F", ""), // files(s)
-        ("%f", ""),
-        ("%D", ""), // Deprecated
-        ("%d", ""),
-        ("%N", ""),
-        ("%n", ""),
-        ("%v", ""),
-        ("%m", ""),
-        ("%i", &info.icon.clone().unwrap_or_default()), // icon
-        ("%c", &info.name),                             // name (translated)
-        ("%k", ""),                                     // filename as uri > file > none
-    ];
-    let mut command_string = info.exec.clone();
-    for replace_key in replace_keys {
-        command_string = command_string.replace(replace_key.0, replace_key.1)
-    }
-    let mut command: Vec<String> = Shlex::new(&command_string).collect();
-
-    if info.terminal {
-        if let Some(term) = term_command {
-            let command_string = term.to_string().replace("{}", &command_string);
-            command = Shlex::new(&command_string).collect();
-        } else if let Some(term) = std::env::var_os("TERMINAL") {
-            let term = term.into_string().expect("couldn't convert to string");
-            let mut command_new = vec![term, "-e".into()];
-            command_new.extend(command);
-            command = command_new;
-        } else {
-            return;
-        };
-    }
-    if launch_cgroups {
-        // TODO: clone
-        // info.id.clone().truncate(info.id.len() - ".desktop".len()); // remove .desktop extension
-        let parsed = Command::new("systemd-escape")
-            .arg(&info.id)
-            .output()
-            .unwrap()
-            .stdout;
-        let unit = format!(
-            "--unit=app-sirula-{}-{}",
-            String::from_utf8_lossy(&parsed).trim(),
-            id()
-        );
-        let mut command_new: Vec<String> = vec![
-            "systemd-run".into(),
-            "--scope".into(),
-            "--user".into(),
-            unit,
-        ];
-        command_new.extend(command);
-        command = command_new;
-    }
-
-    let mut exec = Command::new(&command[0]);
-    let mut exec = exec.args(&command[1..]);
-    if let Some(dir) = &info.path {
-        exec = exec.current_dir(dir)
-    }
-    if info.prefers_nondefault_gpu {
-        if let Some(prime) = gpu_variable {
-            exec = exec.env(prime, "1")
-        }
-    }
-
-    exec.spawn().expect("Error launching app");
 }
 
 #[macro_export]

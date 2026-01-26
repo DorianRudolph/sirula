@@ -25,7 +25,7 @@ use gtk::{
     ListBoxRow,
 };
 use libc::LC_ALL;
-use log::{error, info, warn};
+use log::info;
 
 use std::{cell::RefCell, collections::HashMap, env::args, rc::Rc};
 
@@ -182,7 +182,7 @@ fn app_startup(application: &gtk::Application) {
         let es = entries.borrow();
         let e = &es[r];
         if !e.hidden() {
-            launch_app(&e.info, term_command.as_deref(), launch_cgroups, gpu_var.clone());
+            e.info.run(term_command.as_deref(), launch_cgroups, gpu_var.clone());
 
             let mut history = history.borrow_mut();
             update_history(&mut history, &format!("{}.desktop", e.info.id));
