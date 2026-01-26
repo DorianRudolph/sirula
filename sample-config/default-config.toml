@@ -33,11 +33,11 @@ height = -1
 close_on_unfocus = true
 
 # specify extra field to be displayed alongside the name (may be empty)
-extra_field = ["id_suffix"] # variants: id, id_suffix, executable, command_line
-extra_field_newline = false # show extra field under name and not alongside
+extra_field = ["comment"] # variants: id, id_suffix, name, genericname, comment, categories, keyworks, executable, command_line
+extra_field_newline = true # show extra field under name and not alongside
 hide_extra_if_contained = true # hide extra field if it is already contained in the app name
 
-hidden_fields = [] # list of fields considered for search but hidden
+hidden_fields = ["keywords", "categories"] # list of fields considered for search but hidden, same options as 'extra_field'
 
 exclude = [] # list of regexes for excluded app ids (name of the .desktop file)
 
