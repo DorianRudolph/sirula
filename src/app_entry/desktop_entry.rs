@@ -39,7 +39,7 @@ macro_rules! skip_none {
         match $res {
             Some(val) => val,
             None => {
-                error!("skipping: {} (missing/wrong values)", $id);
+                error!("skipping: {} (missing/wrong values)", &$id);
                 continue;
             }
         }
@@ -104,7 +104,6 @@ impl DesktopEntry {
             }
 
             let app_entry = DesktopEntry {
-                id: id.clone(), // TODO: clone
                 file: entry.path,
                 name: skip_none!(get_key(desktop_entry, "Name"), id),
                 exec: skip_none!(get_exec_key(desktop_entry), id),
@@ -121,11 +120,12 @@ impl DesktopEntry {
                 prefers_nondefault_gpu: get_key_bool(desktop_entry, "PrefersNonDefaultGPU")
                     .unwrap_or_default(),
 
+                id,
                 actions,
             };
 
-            if let Some(app_entry) = out.insert(id, app_entry) {
-                info!("skipping: {} (overwritten)", app_entry.id)
+            if let Some(app_entry) = out.insert(app_entry.id.clone(), app_entry) {
+                info!("skipping: {} (overwritten)", &app_entry.id)
             }
         }
         out.into_values().collect()
