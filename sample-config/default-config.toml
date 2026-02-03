@@ -41,6 +41,8 @@ hidden_fields = ["keywords", "categories"] # list of fields considered for searc
 
 exclude = [] # list of regexes for excluded app ids (name of the .desktop file)
 
+start_empty = false # # if true, will only display apps from the history when search bar is empty
+
 # launch apps in cgroups via systemd for better app management and detection
 cgroups = true
 
