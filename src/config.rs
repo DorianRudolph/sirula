@@ -81,7 +81,7 @@ make_config!(Config {
     term_command: Option<String> = (None) "term_command",
     close_on_unfocus: bool = (true) "close_on_unfocus",
     set_gpu_variable: Option<String> = (None) "set_gpu_variable",
-    start_empty: bool = (false) "start_empty"
+    start_history_only: bool = (false) "start_history_only"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
