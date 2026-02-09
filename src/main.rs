@@ -23,7 +23,7 @@ use gio::SimpleAction;
 use gtk::{
     builders::{BoxBuilder, EntryBuilder, ListBoxBuilder, ScrolledWindowBuilder},
     prelude::*,
-    ListBoxRow,
+    CssProvider, ListBoxRow,
 };
 use libc::LC_ALL;
 use log::info;
@@ -54,8 +54,18 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let cmd_prefix = config.borrow().command_prefix.clone();
     let gpu_var = config.borrow().set_gpu_variable.clone();
 
-    let css_style = Rc::new(RefCell::new(None));
-    load_css(css_style.clone());
+    let css_provider = {
+        let provider = CssProvider::new();
+
+        gtk::StyleContext::add_provider_for_screen(
+            &gdk::Screen::default().expect("Error initializing gtk css provider."),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+
+        Rc::new(RefCell::new(provider))
+    };
+    load_css(css_provider.clone());
 
     let window = gtk::Window::builder()
         .application(application)
@@ -144,7 +154,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
 
     let action_close = SimpleAction::new("reload", None);
     action_close.connect_activate(
-        clone!(history, entries, listbox, config, window, css_style => move |_, _| {
+        clone!(history, entries, listbox, config, window, css_provider => move |_, _| {
             {
                 let mut config = config.borrow_mut();
                 *config = Config::load();
@@ -161,7 +171,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
                 listbox.add(row);
             }
 
-            load_css(css_style.clone());
+            load_css(css_provider.clone());
 
             if window.is_visible() {
                 listbox.select_row(listbox.row_at_index(0).as_ref());
@@ -354,10 +364,7 @@ fn main() {
         0
     });
 
-    application.connect_startup(clone!(daemon => move |app| {
-        //load_css();
-        app_startup(app, daemon);
-    }));
+    application.connect_startup(clone!(daemon => move |app| app_startup(app, daemon)));
 
     application.run_with_args(&arg_string_vec);
 }

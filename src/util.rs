@@ -40,27 +40,12 @@ pub fn get_history_file(place: bool) -> Option<PathBuf> {
     }
 }
 
-pub fn load_css(css_style: Rc<RefCell<Option<CssProvider>>>) {
-    let mut css_style = css_style.borrow_mut();
+pub fn load_css(css_provider: Rc<RefCell<CssProvider>>) {
+    let provider = css_provider.borrow();
 
-    if css_style.is_none() {
-        if let Some(file) = get_config_file(STYLE_FILE) {
-            let provider = CssProvider::new();
-
-            gtk::StyleContext::add_provider_for_screen(
-                &gdk::Screen::default().expect("Error initializing gtk css provider."),
-                &provider,
-                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-            );
-
-            *css_style = Some(provider);
-        }
-    };
-    if let Some(provider) = &*css_style {
-        if let Some(file) = get_config_file(STYLE_FILE) {
-            if let Err(err) = provider.load_from_path(file.to_str().unwrap()) {
-                error!("Failed to load CSS: {err}");
-            }
+    if let Some(file) = get_config_file(STYLE_FILE) {
+        if let Err(err) = provider.load_from_path(file.to_str().unwrap()) {
+            error!("Failed to load CSS: {err}");
         }
     }
 }
