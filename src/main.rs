@@ -72,15 +72,47 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         gtk_layer_shell::auto_exclusive_zone_enable(&window);
     }
 
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Left, config.borrow().margin_left);
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Right, config.borrow().margin_right);
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Top, config.borrow().margin_top);
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Bottom, config.borrow().margin_bottom);
+    gtk_layer_shell::set_margin(
+        &window,
+        gtk_layer_shell::Edge::Left,
+        config.borrow().margin_left,
+    );
+    gtk_layer_shell::set_margin(
+        &window,
+        gtk_layer_shell::Edge::Right,
+        config.borrow().margin_right,
+    );
+    gtk_layer_shell::set_margin(
+        &window,
+        gtk_layer_shell::Edge::Top,
+        config.borrow().margin_top,
+    );
+    gtk_layer_shell::set_margin(
+        &window,
+        gtk_layer_shell::Edge::Bottom,
+        config.borrow().margin_bottom,
+    );
 
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, config.borrow().anchor_left);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.borrow().anchor_right);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, config.borrow().anchor_top);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, config.borrow().anchor_bottom);
+    gtk_layer_shell::set_anchor(
+        &window,
+        gtk_layer_shell::Edge::Left,
+        config.borrow().anchor_left,
+    );
+    gtk_layer_shell::set_anchor(
+        &window,
+        gtk_layer_shell::Edge::Right,
+        config.borrow().anchor_right,
+    );
+    gtk_layer_shell::set_anchor(
+        &window,
+        gtk_layer_shell::Edge::Top,
+        config.borrow().anchor_top,
+    );
+    gtk_layer_shell::set_anchor(
+        &window,
+        gtk_layer_shell::Edge::Bottom,
+        config.borrow().anchor_bottom,
+    );
 
     window.set_decorated(false);
 
@@ -101,37 +133,42 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     scroll.add(&listbox);
 
     let history = Rc::new(RefCell::new(load_history(config.borrow().prune_history)));
-    let entries = Rc::new(RefCell::new(load_entries(&config.borrow(), &history.borrow())));
+    let entries = Rc::new(RefCell::new(load_entries(
+        &config.borrow(),
+        &history.borrow(),
+    )));
 
     for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
         listbox.add(row);
     }
 
     let action_close = SimpleAction::new("reload", None);
-    action_close.connect_activate(clone!(history, entries, listbox, config, window, css_style => move |_, _| {
-        {
-            let mut config = config.borrow_mut();
-            *config = Config::load();
-        }
-        {
-            let mut entries = entries.borrow_mut();
-            *entries = load_entries(&config.borrow(), &history.borrow());
-        }
+    action_close.connect_activate(
+        clone!(history, entries, listbox, config, window, css_style => move |_, _| {
+            {
+                let mut config = config.borrow_mut();
+                *config = Config::load();
+            }
+            {
+                let mut entries = entries.borrow_mut();
+                *entries = load_entries(&config.borrow(), &history.borrow());
+            }
 
-        for row in listbox.children() {
-            listbox.remove(&row);
-        }
-        for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
-            listbox.add(row);
-        }
+            for row in listbox.children() {
+                listbox.remove(&row);
+            }
+            for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
+                listbox.add(row);
+            }
 
-        load_css(css_style.clone());
+            load_css(css_style.clone());
 
-        if window.is_visible() {
-            listbox.select_row(listbox.row_at_index(0).as_ref());
-            window.show_all()
-        }
-    }));
+            if window.is_visible() {
+                listbox.select_row(listbox.row_at_index(0).as_ref());
+                window.show_all()
+            }
+        }),
+    );
 
     application.add_action(&action_close);
 
@@ -150,44 +187,46 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         }
     }
 
-    window.connect_key_press_event(clone!(entry, listbox, entries, daemon_mode => move |window, event| {
-        use constants::*;
-        #[allow(non_upper_case_globals)]
-        Inhibit(match event.keyval() {
-            Escape => {
-                hide_or_close(daemon_mode, window, &entry);
-                true
-            },
-            Down | KP_Down | Tab if entry.has_focus() => {
-                if let Some(r0) = listbox.row_at_index(0) {
-                    let es = entries.borrow();
-                    if r0.is_selected() {
-                        if let Some(r1) = listbox.row_at_index(1) {
-                            if let Some(app_entry) = es.get(&r1) {
-                                if !app_entry.hidden() {
-                                    listbox.select_row(Some(&r1));
+    window.connect_key_press_event(
+        clone!(entry, listbox, entries, daemon_mode => move |window, event| {
+            use constants::*;
+            #[allow(non_upper_case_globals)]
+            Inhibit(match event.keyval() {
+                Escape => {
+                    hide_or_close(daemon_mode, window, &entry);
+                    true
+                },
+                Down | KP_Down | Tab if entry.has_focus() => {
+                    if let Some(r0) = listbox.row_at_index(0) {
+                        let es = entries.borrow();
+                        if r0.is_selected() {
+                            if let Some(r1) = listbox.row_at_index(1) {
+                                if let Some(app_entry) = es.get(&r1) {
+                                    if !app_entry.hidden() {
+                                        listbox.select_row(Some(&r1));
+                                    }
                                 }
                             }
-                        }
-                    } else if let Some(app_entry) = es.get(&r0) {
-                        if !app_entry.hidden() {
-                            listbox.select_row(Some(&r0));
+                        } else if let Some(app_entry) = es.get(&r0) {
+                            if !app_entry.hidden() {
+                                listbox.select_row(Some(&r0));
+                            }
                         }
                     }
+                    false
+                },
+                Up | Down | KP_Up | KP_Down | Page_Up | Page_Down | KP_Page_Up | KP_Page_Down | Tab
+                | Shift_L | Shift_R | Control_L | Control_R | Alt_L | Alt_R | ISO_Left_Tab | Return
+                | KP_Enter => false,
+                _ => {
+                    if !event.is_modifier() && !entry.has_focus() {
+                        entry.grab_focus_without_selecting();
+                    }
+                    false
                 }
-                false
-            },
-            Up | Down | KP_Up | KP_Down | Page_Up | Page_Down | KP_Page_Up | KP_Page_Down | Tab
-            | Shift_L | Shift_R | Control_L | Control_R | Alt_L | Alt_R | ISO_Left_Tab | Return
-            | KP_Enter => false,
-            _ => {
-                if !event.is_modifier() && !entry.has_focus() {
-                    entry.grab_focus_without_selecting();
-                }
-                false
-            }
-        })
-    }));
+            })
+        }),
+    );
 
     if config.borrow().close_on_unfocus {
         window.connect_focus_out_event(clone!(entry, daemon_mode => move |window, _| {
@@ -227,20 +266,22 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         }
     }));
 
-    listbox.connect_row_activated(clone!(entry, entries, window, history, daemon_mode => move |_, r| {
-        {
-            let es = entries.borrow();
-            let e = &es[r];
-            if !e.hidden() {
-                e.info.run(term_command.as_deref(), launch_cgroups, gpu_var.clone());
+    listbox.connect_row_activated(
+        clone!(entry, entries, window, history, daemon_mode => move |_, r| {
+            {
+                let es = entries.borrow();
+                let e = &es[r];
+                if !e.hidden() {
+                    e.info.run(term_command.as_deref(), launch_cgroups, gpu_var.clone());
 
-                let mut history = history.borrow_mut();
-                update_history(&mut history, &format!("{}.desktop", e.info.id));
-                save_history(&history);
+                    let mut history = history.borrow_mut();
+                    update_history(&mut history, &format!("{}.desktop", e.info.id));
+                    save_history(&history);
+                }
             }
-        }
-        hide_or_close(daemon_mode, &window, &entry);
-    }));
+            hide_or_close(daemon_mode, &window, &entry);
+        }),
+    );
 
     listbox.set_filter_func(Some(Box::new(clone!(entries => move |r| {
         let e = entries.borrow();
@@ -294,9 +335,7 @@ fn main() {
     );
 
     // handled above
-    application.connect_handle_local_options(|_, _| {
-        -1
-    });
+    application.connect_handle_local_options(|_, _| -1);
 
     application.connect_command_line(|app, cmd| {
         let args = cmd.options_dict();

@@ -18,11 +18,10 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 use crate::consts::*;
 
 use glib::shell_parse_argv;
-use gtk::{prelude::CssProviderExt, CssProvider, StyleProvider};
-use gdk::Screen;
+use gtk::{prelude::CssProviderExt, CssProvider};
 use log::error;
 
-use std::{path::PathBuf, process::Command, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, path::PathBuf, process::Command, rc::Rc};
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
