@@ -54,6 +54,9 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let cmd_prefix = config.borrow().command_prefix.clone();
     let gpu_var = config.borrow().set_gpu_variable.clone();
 
+    let css_style = Rc::new(RefCell::new(None));
+    load_css(css_style.clone());
+
     let window = gtk::Window::builder()
         .application(application)
         .name("sirula")
@@ -105,7 +108,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     }
 
     let action_close = SimpleAction::new("reload", None);
-    action_close.connect_activate(clone!(history, entries, listbox, config, window => move |_, _| {
+    action_close.connect_activate(clone!(history, entries, listbox, config, window, css_style => move |_, _| {
         {
             let mut config = config.borrow_mut();
             *config = Config::load();
@@ -121,6 +124,8 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
             listbox.add(row);
         }
+
+        load_css(css_style.clone());
 
         if window.is_visible() {
             listbox.select_row(listbox.row_at_index(0).as_ref());
@@ -311,7 +316,7 @@ fn main() {
     });
 
     application.connect_startup(clone!(daemon => move |app| {
-        load_css();
+        //load_css();
         app_startup(app, daemon);
     }));
 

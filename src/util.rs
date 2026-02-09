@@ -18,10 +18,11 @@ along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 use crate::consts::*;
 
 use glib::shell_parse_argv;
-use gtk::{prelude::CssProviderExt, CssProvider};
+use gtk::{prelude::CssProviderExt, CssProvider, StyleProvider};
+use gdk::Screen;
 use log::error;
 
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command, cell::RefCell, rc::Rc};
 
 pub fn get_xdg_dirs() -> xdg::BaseDirectories {
     xdg::BaseDirectories::with_prefix(APP_NAME).unwrap()
@@ -40,17 +41,28 @@ pub fn get_history_file(place: bool) -> Option<PathBuf> {
     }
 }
 
-pub fn load_css() {
-    if let Some(file) = get_config_file(STYLE_FILE) {
-        let provider = CssProvider::new();
-        if let Err(err) = provider.load_from_path(file.to_str().unwrap()) {
-            error!("Failed to load CSS: {err}");
+pub fn load_css(css_style: Rc<RefCell<Option<CssProvider>>>) {
+    let mut css_style = css_style.borrow_mut();
+
+    if css_style.is_none() {
+        if let Some(file) = get_config_file(STYLE_FILE) {
+            let provider = CssProvider::new();
+
+            gtk::StyleContext::add_provider_for_screen(
+                &gdk::Screen::default().expect("Error initializing gtk css provider."),
+                &provider,
+                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
+
+            *css_style = Some(provider);
         }
-        gtk::StyleContext::add_provider_for_screen(
-            &gdk::Screen::default().expect("Error initializing gtk css provider."),
-            &provider,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
+    };
+    if let Some(provider) = &*css_style {
+        if let Some(file) = get_config_file(STYLE_FILE) {
+            if let Err(err) = provider.load_from_path(file.to_str().unwrap()) {
+                error!("Failed to load CSS: {err}");
+            }
+        }
     }
 }
 
