@@ -49,35 +49,35 @@ mod history;
 use history::*;
 
 fn app_startup(application: &gtk::Application, daemon_mode: bool) {
-    let config = Config::load();
-    let launch_cgroups = config.cgroups;
-    let cmd_prefix = config.command_prefix.clone();
-    let gpu_var = config.set_gpu_variable.clone();
+    let config = Rc::new(RefCell::new(Config::load()));
+    let launch_cgroups = config.borrow().cgroups;
+    let cmd_prefix = config.borrow().command_prefix.clone();
+    let gpu_var = config.borrow().set_gpu_variable.clone();
 
     let window = gtk::Window::builder()
         .application(application)
         .name("sirula")
         .build();
-    window.set_size_request(config.width, config.height);
+    window.set_size_request(config.borrow().width, config.borrow().height);
 
     gtk_layer_shell::init_for_window(&window);
     gtk_layer_shell::set_keyboard_interactivity(&window, true);
     gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
     gtk_layer_shell::set_namespace(&window, "sirula");
 
-    if config.exclusive {
+    if config.borrow().exclusive {
         gtk_layer_shell::auto_exclusive_zone_enable(&window);
     }
 
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Left, config.margin_left);
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Right, config.margin_right);
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Top, config.margin_top);
-    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Bottom, config.margin_bottom);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Left, config.borrow().margin_left);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Right, config.borrow().margin_right);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Top, config.borrow().margin_top);
+    gtk_layer_shell::set_margin(&window, gtk_layer_shell::Edge::Bottom, config.borrow().margin_bottom);
 
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, config.anchor_left);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.anchor_right);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, config.anchor_top);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, config.anchor_bottom);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, config.borrow().anchor_left);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, config.borrow().anchor_right);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, config.borrow().anchor_top);
+    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, config.borrow().anchor_bottom);
 
     window.set_decorated(false);
 
@@ -97,8 +97,8 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let listbox = ListBoxBuilder::new().name(LISTBOX_NAME).build();
     scroll.add(&listbox);
 
-    let history = Rc::new(RefCell::new(load_history(config.prune_history)));
-    let entries = Rc::new(RefCell::new(load_entries(&config, &history.borrow())));
+    let history = Rc::new(RefCell::new(load_history(config.borrow().prune_history)));
+    let entries = Rc::new(RefCell::new(load_entries(&config.borrow(), &history.borrow())));
 
     for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
         listbox.add(row);
@@ -107,8 +107,12 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let action_close = SimpleAction::new("reload", None);
     action_close.connect_activate(clone!(history, entries, listbox, config, window => move |_, _| {
         {
+            let mut config = config.borrow_mut();
+            *config = Config::load();
+        }
+        {
             let mut entries = entries.borrow_mut();
-            *entries = load_entries(&config, &history.borrow());
+            *entries = load_entries(&config.borrow(), &history.borrow());
         }
 
         for row in listbox.children() {
@@ -180,7 +184,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         })
     }));
 
-    if config.close_on_unfocus {
+    if config.borrow().close_on_unfocus {
         window.connect_focus_out_event(clone!(entry, daemon_mode => move |window, _| {
             hide_or_close(daemon_mode, window, &entry);
             Inhibit(false)
@@ -188,7 +192,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     }
 
     let matcher = SkimMatcherV2::default();
-    let term_command = config.term_command.clone();
+    let term_command = config.borrow().term_command.clone();
     entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
         let text = e.text();
         let is_cmd = is_cmd(&text, &cmd_prefix);
@@ -198,7 +202,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
                 if is_cmd {
                     entry.hide(); // hide entries in command mode
                 } else {
-                    entry.update_match(&text, &matcher, &config);
+                    entry.update_match(&text, &matcher, &config.borrow());
                 }
             }
         }
