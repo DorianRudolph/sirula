@@ -19,6 +19,7 @@ use env_logger::Builder;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use gdk::keys::constants;
 use gio::prelude::*;
+use gio::SimpleAction;
 use gtk::{
     builders::{BoxBuilder, EntryBuilder, ListBoxBuilder, ScrolledWindowBuilder},
     prelude::*,
@@ -102,6 +103,28 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
         listbox.add(row);
     }
+
+    let action_close = SimpleAction::new("reload", None);
+    action_close.connect_activate(clone!(history, entries, listbox, config, window => move |_, _| {
+        {
+            let mut entries = entries.borrow_mut();
+            *entries = load_entries(&config, &history.borrow());
+        }
+
+        for row in listbox.children() {
+            listbox.remove(&row);
+        }
+        for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
+            listbox.add(row);
+        }
+
+        if window.is_visible() {
+            listbox.select_row(listbox.row_at_index(0).as_ref());
+            window.show_all()
+        }
+    }));
+
+    application.add_action(&action_close);
 
     fn hide_or_close(daemon_mode: bool, window: &gtk::Window, entry: &gtk::Entry) {
         if daemon_mode {
@@ -237,9 +260,9 @@ fn main() {
     let arg_string_vec: Vec<String> = args().collect();
     let daemon = arg_string_vec.iter().any(|s| s == "--daemon" || s == "-d");
     let app_flags = if daemon {
-        gio::ApplicationFlags::IS_SERVICE
+        gio::ApplicationFlags::HANDLES_COMMAND_LINE | gio::ApplicationFlags::IS_SERVICE
     } else {
-        Default::default()
+        gio::ApplicationFlags::HANDLES_COMMAND_LINE
     };
     let application = gtk::Application::new(Some(APP_ID), app_flags);
 
@@ -252,9 +275,35 @@ fn main() {
         None,
     );
 
+    application.add_main_option(
+        "reload",
+        glib::Char::from(b'r'),
+        glib::OptionFlags::IN_MAIN,
+        glib::OptionArg::None,
+        "reload sirula when in daemon mode",
+        None,
+    );
+
+    // handled above
     application.connect_handle_local_options(|_, _| {
-        // handled above
         -1
+    });
+
+    application.connect_command_line(|app, cmd| {
+        let args = cmd.options_dict();
+
+        if args.contains("reload") {
+            if cmd.is_remote() {
+                app.activate_action("reload", None);
+            } else {
+                log::error!("no daemon instance running");
+                app.quit()
+            }
+        } else {
+            app.activate()
+        }
+
+        0
     });
 
     application.connect_startup(clone!(daemon => move |app| {

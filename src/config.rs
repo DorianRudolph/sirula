@@ -25,7 +25,7 @@ use std::collections::HashMap;
 
 macro_rules! make_config {
     ($name:ident { $($field:ident : $type:ty $( = ($default:expr) $field_str:literal )? $( [$serde_opts:expr])? ),* }) => {
-        #[derive(Deserialize, Debug)]
+        #[derive(Deserialize, Debug, Clone)]
         pub struct $name { $(
             #[serde( $(default = $field_str )? )]
             $(#[serde($serde_opts)])?
