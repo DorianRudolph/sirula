@@ -30,9 +30,13 @@ I'd be happy to hear any criticism of my code.
 Use `config.toml` and `style.css` in your `.config/sirula` directory.
 See `sample-config` for documentation.
 
+## Launching
+
+Simply run `sirula`.
+
 ## Daemon mode
 
-**Latest git only**
+**! Latest git only !**
 
 Run `sirula` with `--daemon` to start the daemon.
 To show the window, simply run `sirula` again or use `--toggle` to toggle the window.
