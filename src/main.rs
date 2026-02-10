@@ -399,7 +399,7 @@ fn main() {
             }
         } else {
             if reload || toggle || quit {
-                log::error!("no daemon instance running, ignoring application flags");
+                log::warn!("no daemon instance running, ignoring application flags");
             }
             app.activate()
         }
