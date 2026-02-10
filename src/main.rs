@@ -182,7 +182,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     );
 
     let action_toggle = SimpleAction::new("toggle", None);
-    action_toggle.connect_activate(clone!(window, daemon_mode, entry => move |app, _| {
+    action_toggle.connect_activate(clone!(window, daemon_mode, entry => move |_, _| {
         if window.is_visible() {
             hide_or_close(daemon_mode, &window, &entry);
         } else {
