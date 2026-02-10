@@ -11,12 +11,12 @@ I'd be happy to hear any criticism of my code.
 
 `sample-config/a`:
 
-![](sample-config/a/sirula.gif)
-[open](https://raw.githubusercontent.com/DorianRudolph/sirula/master/sample-config/sirula.gif)
+[![](sample-config/a/sirula.gif)](https://raw.githubusercontent.com/DorianRudolph/sirula/master/sample-config/sirula.gif)
 
-`sample-config/b`: Overlay in the center of the screen.
+`sample-config/e`: Overlay in the center of the screen with some simple CSS animations.
 
-![](sample-config/b/sirula.png)
+[![](sample-config/e/sirula.gif)](https://raw.githubusercontent.com/DorianRudolph/sirula/master/sample-config/sirula.gif)
+
 ## Building
 
 - Dependency: [gtk-layer-shell](https://github.com/wmww/gtk-layer-shell)
@@ -29,3 +29,14 @@ I'd be happy to hear any criticism of my code.
 
 Use `config.toml` and `style.css` in your `.config/sirula` directory.
 See `sample-config` for documentation.
+
+## Daemon mode
+
+**Latest git only**
+
+Run `sirula` with `--daemon` to start the daemon.
+To show the window, simply run `sirula` again or use `--toggle` to toggle the window.
+
+`sirula --reload` will reload all desktop, config and styling files.
+
+See `--help` for more options.
