@@ -155,6 +155,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let action_close = SimpleAction::new("reload", None);
     action_close.connect_activate(
         clone!(history, entries, listbox, config, window, css_provider => move |_, _| {
+            log::info!("reloading");
             {
                 let mut config = config.borrow_mut();
                 *config = Config::load();
@@ -180,7 +181,17 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         }),
     );
 
+    let action_toggle = SimpleAction::new("toggle", None);
+    action_toggle.connect_activate(clone!(window, daemon_mode, entry => move |app, _| {
+        if window.is_visible() {
+            hide_or_close(daemon_mode, &window, &entry);
+        } else {
+            window.show_all()
+        }
+    }));
+
     application.add_action(&action_close);
+    application.add_action(&action_toggle);
 
     fn hide_or_close(daemon_mode: bool, window: &gtk::Window, entry: &gtk::Entry) {
         if daemon_mode {
@@ -344,20 +355,52 @@ fn main() {
         None,
     );
 
+    application.add_main_option(
+        "toggle",
+        glib::Char::from(b't'),
+        glib::OptionFlags::IN_MAIN,
+        glib::OptionArg::None,
+        "toggle sirula visibility when in daemon mode",
+        None,
+    );
+
+    application.add_main_option(
+        "quit",
+        glib::Char::from(b'q'),
+        glib::OptionFlags::IN_MAIN,
+        glib::OptionArg::None,
+        "quit sirula when in daemon mode",
+        None,
+    );
+
     // handled above
     application.connect_handle_local_options(|_, _| -1);
 
     application.connect_command_line(|app, cmd| {
         let args = cmd.options_dict();
 
-        if args.contains("reload") {
-            if cmd.is_remote() {
+        let reload = args.contains("reload");
+        let toggle = args.contains("toggle");
+        let quit = args.contains("quit");
+
+        if cmd.is_remote() {
+            if quit {
+                app.quit();
+                return 0;
+            }
+            if reload {
                 app.activate_action("reload", None);
-            } else {
-                log::error!("no daemon instance running");
-                app.quit()
+            }
+            if toggle {
+                app.activate_action("toggle", None);
+            }
+            if !(reload || toggle) {
+                app.activate()
             }
         } else {
+            if reload || toggle || quit {
+                log::error!("no daemon instance running, ignoring application flags");
+            }
             app.activate()
         }
 
