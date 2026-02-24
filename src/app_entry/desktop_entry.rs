@@ -1,10 +1,10 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
 use log::{error, info, warn};
 use shlex::Shlex;
+use uuid::Uuid;
 use which::which;
 
-use std::process::{id, Command};
-use std::{collections::HashMap, env::var, path::PathBuf};
+use std::{collections::HashMap, env::var, path::PathBuf, process::Command};
 
 pub struct DesktopEntry {
     pub id: String,
@@ -180,7 +180,7 @@ impl DesktopEntry {
             let unit = format!(
                 "--unit=app-sirula-{}-{}",
                 String::from_utf8_lossy(&parsed).trim(),
-                id()
+                Uuid::now_v7().to_string()
             );
             let mut command_new: Vec<String> = vec![
                 "systemd-run".into(),

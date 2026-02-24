@@ -27,6 +27,7 @@ freedesktop-desktop-entry = "0.7.13"
 which = "8.0.0"
 log = "0.4.27"
 env_logger = "0.11.8"
+uuid = { version = "1.21.0", features = ["v7"] }
 
 [profile.release]
 lto = true
