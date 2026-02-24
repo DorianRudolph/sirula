@@ -134,7 +134,7 @@ impl DesktopEntry {
     pub fn run(
         &self,
         term_command: Option<&str>,
-        launch_cgroups: bool,
+        launch_cgroups: (bool, bool),
         gpu_variable: Option<String>,
     ) {
         let replace_keys = [
@@ -171,7 +171,7 @@ impl DesktopEntry {
                 return;
             };
         }
-        if launch_cgroups {
+        if launch_cgroups.0 {
             let parsed = Command::new("systemd-escape")
                 .arg(&self.id)
                 .output()
@@ -184,10 +184,13 @@ impl DesktopEntry {
             );
             let mut command_new: Vec<String> = vec![
                 "systemd-run".into(),
-                "--scope".into(),
+                "--slice=app.slice".into(),
                 "--user".into(),
                 unit,
             ];
+            if !launch_cgroups.1 {
+                command_new.push("--scope".into())
+            }
             command_new.extend(command);
             command = command_new;
         }

@@ -51,6 +51,7 @@ use history::*;
 fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let config = Rc::new(RefCell::new(Config::load()));
     let launch_cgroups = config.borrow().cgroups;
+    let launch_cgroups_detached = config.borrow().cgroups_detach;
     let cmd_prefix = config.borrow().command_prefix.clone();
     let gpu_var = config.borrow().set_gpu_variable.clone();
 
@@ -293,7 +294,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
                 let es = entries.borrow();
                 let e = &es[r];
                 if !e.hidden() {
-                    e.info.run(term_command.as_deref(), launch_cgroups, gpu_var.clone());
+                    e.info.run(term_command.as_deref(), (launch_cgroups, launch_cgroups_detached), gpu_var.clone());
 
                     let mut history = history.borrow_mut();
                     update_history(&mut history, &format!("{}.desktop", e.info.id));

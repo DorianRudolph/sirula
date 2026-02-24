@@ -45,6 +45,10 @@ start_history_only = false # if true, will only display apps from the history wh
 
 # launch apps in cgroups via systemd for better app management and detection
 cgroups = true
+# if using cgroups, launch the apps as a service instead of as a scope.
+# has the advantage that if the sirula daemon crashes, the applications do not
+# however, this might be missing variables like $DISPLAY, so test this first
+cgroups_detach = false
 
 # prefix for running commands instead of launching an app (e.g., `:xeyes` to launch xeyes)
 # use "" to disable launching commands
