@@ -330,7 +330,12 @@ fn main() {
     set_locale(LC_ALL, "");
 
     let arg_string_vec: Vec<String> = args().collect();
-    let daemon = arg_string_vec.iter().any(|s| s == "--daemon" || s == "-d");
+    let daemon = arg_string_vec.iter().any(|s| {
+        s == "--daemon"
+            || s == "--reload-or-restart"
+            || (s.starts_with('-') && s.len() > 1 && &s[1..2] != "-" && s.contains('d')
+                || s.contains('R'))
+    });
     let app_flags = if daemon {
         gio::ApplicationFlags::HANDLES_COMMAND_LINE | gio::ApplicationFlags::IS_SERVICE
     } else {
@@ -353,6 +358,15 @@ fn main() {
         glib::OptionFlags::IN_MAIN,
         glib::OptionArg::None,
         "reload sirula when in daemon mode",
+        None,
+    );
+
+    application.add_main_option(
+        "reload-or-restart",
+        glib::Char::from(b'R'),
+        glib::OptionFlags::IN_MAIN,
+        glib::OptionArg::None,
+        "reload sirula when in daemon mode or start the daemon if not",
         None,
     );
 
@@ -381,6 +395,7 @@ fn main() {
         let args = cmd.options_dict();
 
         let reload = args.contains("reload");
+        let reload_or_restart = args.contains("reload-or-restart");
         let toggle = args.contains("toggle");
         let quit = args.contains("quit");
 
@@ -389,7 +404,7 @@ fn main() {
                 app.quit();
                 return 0;
             }
-            if reload {
+            if reload || reload_or_restart {
                 app.activate_action("reload", None);
             }
             if toggle {
