@@ -61,7 +61,7 @@ impl DesktopEntry {
 
         for entry in entries.into_iter().rev() {
             let id = entry.appid;
-            let desktop_entry = entry.groups.0.get("Desktop Entry").unwrap();
+            let Some(desktop_entry) = entry.groups.0.get("Desktop Entry") else {continue};
 
             {
                 // skip if conditions are met
