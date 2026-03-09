@@ -61,7 +61,7 @@ impl DesktopEntry {
 
         for entry in entries.into_iter().rev() {
             let id = entry.appid;
-            let Some(desktop_entry) = entry.groups.0.get("Desktop Entry") else {continue};
+            let desktop_entry = skip_none!(entry.groups.0.get("Desktop Entry"), id);
 
             {
                 // skip if conditions are met
