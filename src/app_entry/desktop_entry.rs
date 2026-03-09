@@ -1,10 +1,9 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
 use log::{error, info, warn};
 use shlex::Shlex;
-use uuid::Uuid;
 use which::which;
 
-use std::{collections::HashMap, env::var, path::PathBuf, process::Command};
+use std::{collections::HashMap, env::var, path::PathBuf, process::Command, time::{SystemTime, UNIX_EPOCH}};
 
 pub struct DesktopEntry {
     pub id: String,
@@ -149,8 +148,8 @@ impl DesktopEntry {
             ("%v", ""),
             ("%m", ""),
             ("%i", &self.icon.clone().unwrap_or_default()), // icon TODO: clone!
-            ("%c", &self.name),                             // name (translated)
-            ("%k", ""),                                     // filename as uri > file > none
+            ("%c", &self.name), // name (translated)
+            ("%k", ""),  // filename as uri > file > none
         ];
         let mut command_string = self.exec.clone();
         for replace_key in replace_keys {
@@ -172,15 +171,11 @@ impl DesktopEntry {
             };
         }
         if launch_cgroups.0 {
-            let parsed = Command::new("systemd-escape")
-                .arg(&self.id)
-                .output()
-                .unwrap()
-                .stdout;
+            let parsed = escape_name(&self.id);
             let unit = format!(
                 "--unit=app-sirula-{}-{}",
-                String::from_utf8_lossy(&parsed).trim(),
-                Uuid::now_v7().to_string()
+                &parsed,
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
             );
             let mut command_new: Vec<String> = vec![
                 "systemd-run".into(),
@@ -246,3 +241,21 @@ impl PartialEq for DesktopEntry {
 }
 
 impl Eq for DesktopEntry {}
+
+// from systemd crate
+pub fn escape_name(s: &str) -> String {
+    let mut escaped = String::with_capacity(s.len() * 2);
+    for (index, b) in s.bytes().enumerate() {
+        match b {
+            b'/' => escaped.push('-'),
+            // Do not escape '.' unless it's the first character
+            b'.' if 0 < index => escaped.push(char::from(b)),
+            // Do not escape _ and : and
+            b'_' | b':' => escaped.push(char::from(b)),
+            // all ASCII alphanumeric characters
+            _ if b.is_ascii_alphanumeric() => escaped.push(char::from(b)),
+            _ => escaped.push_str(&format!("\\x{b:02x}")),
+        }
+    }
+    escaped
+}
