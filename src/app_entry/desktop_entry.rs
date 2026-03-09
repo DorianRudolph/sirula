@@ -149,8 +149,8 @@ impl DesktopEntry {
             ("%v", ""),
             ("%m", ""),
             ("%i", &self.icon.clone().unwrap_or_default()), // icon TODO: clone!
-            ("%c", &self.name),                             // name (translated)
-            ("%k", ""),                                     // filename as uri > file > none
+            ("%c", &self.name), // name (translated)
+            ("%k", ""),  // filename as uri > file > none
         ];
         let mut command_string = self.exec.clone();
         for replace_key in replace_keys {
@@ -172,14 +172,10 @@ impl DesktopEntry {
             };
         }
         if launch_cgroups {
-            let parsed = Command::new("systemd-escape")
-                .arg(&self.id)
-                .output()
-                .unwrap()
-                .stdout;
+            let parsed = escape_name(&self.id);
             let unit = format!(
                 "--unit=app-sirula-{}-{}",
-                String::from_utf8_lossy(&parsed).trim(),
+                &parsed,
                 id()
             );
             let mut command_new: Vec<String> = vec![
@@ -243,3 +239,21 @@ impl PartialEq for DesktopEntry {
 }
 
 impl Eq for DesktopEntry {}
+
+// from systemd crate
+pub fn escape_name(s: &str) -> String {
+    let mut escaped = String::with_capacity(s.len() * 2);
+    for (index, b) in s.bytes().enumerate() {
+        match b {
+            b'/' => escaped.push('-'),
+            // Do not escape '.' unless it's the first character
+            b'.' if 0 < index => escaped.push(char::from(b)),
+            // Do not escape _ and : and
+            b'_' | b':' => escaped.push(char::from(b)),
+            // all ASCII alphanumeric characters
+            _ if b.is_ascii_alphanumeric() => escaped.push(char::from(b)),
+            _ => escaped.push_str(&format!("\\x{b:02x}")),
+        }
+    }
+    escaped
+}
