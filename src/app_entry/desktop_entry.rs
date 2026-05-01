@@ -1,5 +1,5 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
-use log::{error, info, warn};
+use log::{error, debug, info, warn};
 use shlex::Shlex;
 use which::which;
 
@@ -86,7 +86,7 @@ impl DesktopEntry {
                     }
                 };
                 if not_show_in || only_show_in || hidden || nodisplay {
-                    info!("skipping: {} (hidden)", &id);
+                    debug!("skipping: {} (hidden)", &id);
                     continue;
                 }
             }
@@ -125,7 +125,7 @@ impl DesktopEntry {
 
             if let Some(app_entry) = out.insert(app_entry.id.clone(), app_entry) {
                 // TODO: clone
-                info!("skipping: {} (overwritten)", &app_entry.id)
+                debug!("skipping: {} (overwritten)", &app_entry.id)
             }
         }
         out.into_values().collect()
@@ -189,6 +189,8 @@ impl DesktopEntry {
             command_new.extend(command);
             command = command_new;
         }
+
+        info!("running \"{}\" with command \"{}\"", self.name, &command.join(" "));
 
         let mut exec = Command::new(&command[0]);
         let mut exec = exec.args(&command[1..]);

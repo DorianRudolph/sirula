@@ -156,7 +156,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let action_close = SimpleAction::new("reload", None);
     action_close.connect_activate(
         clone!(history, entries, listbox, config, window, css_provider => move |_, _| {
-            log::info!("reloading");
+            info!("reloading");
             {
                 let mut config = config.borrow_mut();
                 *config = Config::load();
@@ -184,6 +184,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
 
     let action_toggle = SimpleAction::new("toggle", None);
     action_toggle.connect_activate(clone!(window, daemon_mode, entry => move |_, _| {
+        info!("toggling");
         if window.is_visible() {
             hide_or_close(daemon_mode, &window, &entry);
         } else {
@@ -210,10 +211,18 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     }
 
     window.connect_key_press_event(
-        clone!(entry, listbox, entries, daemon_mode => move |window, event| {
+        clone!(entry, listbox, entries, daemon_mode, application => move |window, event| {
             use constants::*;
             #[allow(non_upper_case_globals)]
             Inhibit(match event.keyval() {
+                f | F if event.state().contains(gdk::ModifierType::CONTROL_MASK) => {
+                    application.activate_action("reload", None);
+                    false
+                },
+                F5 => {
+                    application.activate_action("reload", None);
+                    false
+                },
                 Escape => {
                     hide_or_close(daemon_mode, window, &entry);
                     true
