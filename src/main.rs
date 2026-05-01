@@ -202,7 +202,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
             if cur_text.is_empty() {
                 entry.emit_by_name::<()>("changed", &[]);
             } else {
-                entry.set_text(&"");
+                entry.set_text("");
             }
             entry.grab_focus_without_selecting();
         } else {
@@ -215,7 +215,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
             use constants::*;
             #[allow(non_upper_case_globals)]
             Inhibit(match event.keyval() {
-                f | F if event.state().contains(gdk::ModifierType::CONTROL_MASK) => {
+                r | R if event.state().contains(gdk::ModifierType::CONTROL_MASK) => {
                     application.activate_action("reload", None);
                     false
                 },
@@ -291,7 +291,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         if is_cmd(&text, &cmd_prefix) { // command execution direct
             let cmd_line = &text[cmd_prefix.len()..].trim();
             launch_cmd(cmd_line);
-            hide_or_close(daemon_mode, &window, &e);
+            hide_or_close(daemon_mode, &window, e);
         } else if let Some(row) = listbox.row_at_index(0) {
             row.activate();
         }
