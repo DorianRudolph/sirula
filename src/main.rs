@@ -161,14 +161,17 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
                 let mut config = config.borrow_mut();
                 *config = Config::load();
             }
-            {
-                let mut entries = entries.borrow_mut();
-                *entries = load_entries(&config.borrow(), &history.borrow());
-            }
+
+            let entries_new = load_entries(&config.borrow(), &history.borrow());
 
             for row in listbox.children() {
                 listbox.remove(&row);
             }
+
+            {
+            	entries.replace(entries_new);
+            }
+
             for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
                 listbox.add(row);
             }
