@@ -1,9 +1,15 @@
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Group, Iter};
-use log::{error, debug, info, warn};
+use log::{debug, error, info, warn};
 use shlex::Shlex;
 use which::which;
 
-use std::{collections::HashMap, env::var, path::PathBuf, process::Command, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::HashMap,
+    env::var,
+    path::PathBuf,
+    process::Command,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 pub struct DesktopEntry {
     pub id: String,
@@ -148,8 +154,8 @@ impl DesktopEntry {
             ("%v", ""),
             ("%m", ""),
             ("%i", &self.icon.clone().unwrap_or_default()), // icon TODO: clone!
-            ("%c", &self.name), // name (translated)
-            ("%k", ""),  // filename as uri > file > none
+            ("%c", &self.name),                             // name (translated)
+            ("%k", ""),                                     // filename as uri > file > none
         ];
         let mut command_string = self.exec.clone();
         for replace_key in replace_keys {
@@ -175,7 +181,10 @@ impl DesktopEntry {
             let unit = format!(
                 "--unit=app-sirula-{}-{}",
                 &parsed,
-                SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
             );
             let mut command_new: Vec<String> = vec![
                 "systemd-run".into(),
@@ -190,7 +199,11 @@ impl DesktopEntry {
             command = command_new;
         }
 
-        info!("running \"{}\" with command \"{}\"", self.name, &command.join(" "));
+        info!(
+            "running \"{}\" with command \"{}\"",
+            self.name,
+            &command.join(" ")
+        );
 
         let mut exec = Command::new(&command[0]);
         let mut exec = exec.args(&command[1..]);

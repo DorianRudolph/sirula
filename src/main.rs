@@ -155,7 +155,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
 
     let action_close = SimpleAction::new("reload", None);
     action_close.connect_activate(
-        clone!(history, entries, listbox, config, window, css_provider => move |_, _| {
+        clone!(history, entries, entry, listbox, config, window, css_provider => move |_, _| {
             info!("reloading");
             {
                 let mut config = config.borrow_mut();
@@ -169,7 +169,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
             }
 
             {
-            	entries.replace(entries_new);
+                entries.replace(entries_new);
             }
 
             for row in (&entries.borrow() as &HashMap<ListBoxRow, AppEntry>).keys() {
@@ -180,6 +180,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
 
             if window.is_visible() {
                 listbox.select_row(listbox.row_at_index(0).as_ref());
+                entry.emit_by_name::<()>("changed", &[]);
                 window.show_all()
             }
         }),
