@@ -331,10 +331,13 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         window.show_all()
     }));
 
-    gtk::glib::source::unix_signal_add_local(libc::SIGUSR1, clone!(application => move || {
-        application.activate_action("reload", None);
-        glib::Continue(true)
-    }));
+    gtk::glib::source::unix_signal_add_local(
+        libc::SIGUSR1,
+        clone!(application => move || {
+            application.activate_action("reload", None);
+            glib::Continue(true)
+        }),
+    );
 
     if daemon_mode {
         if !config.borrow().disable_file_monitor {

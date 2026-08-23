@@ -3,7 +3,15 @@ use log::{debug, error, info, warn};
 use shlex::Shlex;
 use which::which;
 
-use std::{collections::HashMap, env::var, path::PathBuf, process::Command, time::{SystemTime, UNIX_EPOCH}, cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    env::var,
+    path::PathBuf,
+    process::Command,
+    rc::Rc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::Config;
 
@@ -54,8 +62,9 @@ impl DesktopEntry {
             Iter::new(vec![PathBuf::from(path)].into_iter())
         } else {
             Iter::new(default_paths())
-        }.entries(Some(&locales))
-            .collect::<Vec<_>>();
+        }
+        .entries(Some(&locales))
+        .collect::<Vec<_>>();
 
         let mut out = HashMap::new();
         let xdg_current_desktop = var("XDG_CURRENT_DESKTOP");
@@ -135,10 +144,7 @@ impl DesktopEntry {
         }
         out.into_values().collect()
     }
-    pub fn run(
-        &self,
-        config: Rc<RefCell<Config>>
-    ) {
+    pub fn run(&self, config: Rc<RefCell<Config>>) {
         let replace_keys = [
             ("%U", ""), // link(s)
             ("%u", ""),
@@ -218,31 +224,30 @@ impl DesktopEntry {
 }
 
 pub fn setup_monitor(application: &gtk::Application) {
-    use gio::prelude::FileExt;
-    use glib::ObjectExt;
     use crate::clone;
     use gio::prelude::ActionGroupExt;
+    use gio::prelude::FileExt;
     use gio::prelude::FileMonitorExt;
+    use glib::ObjectExt;
 
     for (i, path) in default_paths().enumerate() {
         let dir = gio::File::for_path(&path);
 
         let monitor = dir
-            .monitor_directory(
-                gio::FileMonitorFlags::NONE,
-                gio::Cancellable::NONE,
-            )
+            .monitor_directory(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE)
             .expect("failed to monitor directory");
 
-        monitor.connect_changed(clone!(application => move |_monitor, file, _other_file, event| {
-            use gio::FileMonitorEvent::*;
-            if event == Created || event == Changed || event== Deleted {
-                application.activate_action("reload", None);
-            };
-            if let Some(name) = file.basename() {
-                info!("file changed: {}/{} ({})", &path.display(), name.display(), event);
-            }
-        }));
+        monitor.connect_changed(
+            clone!(application => move |_monitor, file, _other_file, event| {
+                use gio::FileMonitorEvent::*;
+                if event == Created || event == Changed || event== Deleted {
+                    application.activate_action("reload", None);
+                };
+                if let Some(name) = file.basename() {
+                    info!("file changed: {}/{} ({})", &path.display(), name.display(), event);
+                }
+            }),
+        );
 
         unsafe {
             application.set_data(&format!("file-monitor-{i}"), monitor);
@@ -251,7 +256,10 @@ pub fn setup_monitor(application: &gtk::Application) {
 }
 
 pub fn autostart_apps(config: Rc<RefCell<Config>>) {
-    let dir = format!("{}/autostart", var("XDG_CONFIG_HOME").unwrap_or(format!("{}/{}", var("HOME").unwrap(), ".config")));
+    let dir = format!(
+        "{}/autostart",
+        var("XDG_CONFIG_HOME").unwrap_or(format!("{}/{}", var("HOME").unwrap(), ".config"))
+    );
     let entries = DesktopEntry::get(Some(dir));
     for entry in entries {
         entry.run(config.clone());
