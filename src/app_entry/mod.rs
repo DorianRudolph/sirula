@@ -170,7 +170,7 @@ pub fn load_entries(
 ) -> HashMap<ListBoxRow, AppEntry> {
     let mut entries = HashMap::new();
     let icon_theme = IconTheme::default().unwrap();
-    let apps = DesktopEntry::get();
+    let apps = DesktopEntry::get(None);
     let exclude = RegexSet::new(&config.exclude).expect("Invalid regex");
 
     for app in apps {

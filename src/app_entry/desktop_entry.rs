@@ -3,13 +3,9 @@ use log::{debug, error, info, warn};
 use shlex::Shlex;
 use which::which;
 
-use std::{
-    collections::HashMap,
-    env::var,
-    path::PathBuf,
-    process::Command,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::{collections::HashMap, env::var, path::PathBuf, process::Command, time::{SystemTime, UNIX_EPOCH}, cell::RefCell, rc::Rc};
+
+use crate::Config;
 
 pub struct DesktopEntry {
     pub id: String,
@@ -52,10 +48,13 @@ macro_rules! skip_none {
 }
 
 impl DesktopEntry {
-    pub fn get() -> Vec<DesktopEntry> {
+    pub fn get(path: Option<String>) -> Vec<DesktopEntry> {
         let locales = get_languages_from_env();
-        let entries = Iter::new(default_paths())
-            .entries(Some(&locales))
+        let entries = if let Some(path) = path {
+            Iter::new(vec![PathBuf::from(path)].into_iter())
+        } else {
+            Iter::new(default_paths())
+        }.entries(Some(&locales))
             .collect::<Vec<_>>();
 
         let mut out = HashMap::new();
@@ -138,9 +137,7 @@ impl DesktopEntry {
     }
     pub fn run(
         &self,
-        term_command: Option<&str>,
-        launch_cgroups: (bool, bool),
-        gpu_variable: Option<String>,
+        config: Rc<RefCell<Config>>
     ) {
         let replace_keys = [
             ("%U", ""), // link(s)
@@ -164,7 +161,7 @@ impl DesktopEntry {
         let mut command: Vec<String> = Shlex::new(&command_string).collect();
 
         if self.terminal {
-            if let Some(term) = term_command {
+            if let Some(term) = &config.borrow().term_command {
                 let command_string = term.to_string().replace("{}", &command_string);
                 command = Shlex::new(&command_string).collect();
             } else if let Some(term) = std::env::var_os("TERMINAL") {
@@ -176,7 +173,7 @@ impl DesktopEntry {
                 return;
             };
         }
-        if launch_cgroups.0 {
+        if config.borrow().cgroups {
             let parsed = escape_name(&self.id);
             let unit = format!(
                 "--unit=app-sirula-{}-{}",
@@ -192,7 +189,7 @@ impl DesktopEntry {
                 "--user".into(),
                 unit,
             ];
-            if !launch_cgroups.1 {
+            if !config.borrow().cgroups_detach {
                 command_new.push("--scope".into())
             }
             command_new.extend(command);
@@ -211,7 +208,7 @@ impl DesktopEntry {
             exec = exec.current_dir(dir)
         }
         if self.prefers_nondefault_gpu {
-            if let Some(prime) = gpu_variable {
+            if let Some(prime) = &config.borrow().set_gpu_variable {
                 exec = exec.env(prime, "1")
             }
         }
@@ -250,6 +247,14 @@ pub fn setup_monitor(application: &gtk::Application) {
         unsafe {
             application.set_data(&format!("file-monitor-{i}"), monitor);
         }
+    }
+}
+
+pub fn autostart_apps(config: Rc<RefCell<Config>>) {
+    let dir = format!("{}/autostart", var("XDG_CONFIG_HOME").unwrap_or(format!("{}/{}", var("HOME").unwrap(), ".config")));
+    let entries = DesktopEntry::get(Some(dir));
+    for entry in entries {
+        entry.run(config.clone());
     }
 }
 

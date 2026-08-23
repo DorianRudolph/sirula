@@ -50,10 +50,7 @@ use history::*;
 
 fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let config = Rc::new(RefCell::new(Config::load()));
-    let launch_cgroups = config.borrow().cgroups;
-    let launch_cgroups_detached = config.borrow().cgroups_detach;
     let cmd_prefix = config.borrow().command_prefix.clone();
-    let gpu_var = config.borrow().set_gpu_variable.clone();
 
     let css_provider = {
         let provider = CssProvider::new();
@@ -271,8 +268,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     }
 
     let matcher = SkimMatcherV2::default();
-    let term_command = config.borrow().term_command.clone();
-    entry.connect_changed(clone!(entries, listbox, cmd_prefix => move |e| {
+    entry.connect_changed(clone!(entries, listbox, cmd_prefix, config => move |e| {
         let text = e.text();
         let is_cmd = is_cmd(&text, &cmd_prefix);
         {
@@ -302,12 +298,12 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     }));
 
     listbox.connect_row_activated(
-        clone!(entry, entries, window, history, daemon_mode => move |_, r| {
+        clone!(config, entry, entries, window, history, daemon_mode => move |_, r| {
             {
                 let es = entries.borrow();
                 let e = &es[r];
                 if !e.hidden() {
-                    e.info.run(term_command.as_deref(), (launch_cgroups, launch_cgroups_detached), gpu_var.clone());
+                    e.info.run(config.clone());
 
                     let mut history = history.borrow_mut();
                     update_history(&mut history, &format!("{}.desktop", e.info.id));
@@ -340,7 +336,14 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
         glib::Continue(true)
     }));
 
-    app_entry::desktop_entry::setup_monitor(application);
+    if daemon_mode {
+        if !config.borrow().disable_file_monitor {
+            app_entry::desktop_entry::setup_monitor(application);
+        }
+        if config.borrow().autostart_apps {
+            app_entry::desktop_entry::autostart_apps(config);
+        }
+    }
 }
 
 fn main() {

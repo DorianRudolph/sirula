@@ -51,38 +51,40 @@ pub enum Field {
 
 // not sure how to avoid having to specify the name twice
 make_config!(Config {
-    markup_default: Vec<Attribute> = (Vec::new()) "markup_default" [deserialize_with = "deserialize_markup"],
-    markup_highlight: Vec<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
-    markup_extra: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_extra" [deserialize_with = "deserialize_markup"],
-    exclusive: bool = (true) "exclusive",
-    frequent_first: bool = (false) "frequent_first",
-    recent_first: bool = (true) "recent_first",
-    prune_history: u32 = (0) "prune_history",
-    icon_size: i32 = (64) "icon_size",
-    lines: i32 = (2) "lines",
-    margin_left: i32 = (0) "margin_left",
-    margin_right: i32 = (0) "margin_right",
-    margin_top: i32 = (0) "margin_top",
-    margin_bottom: i32 = (0) "margin_bottom",
+    anchor_bottom: bool = (true) "anchor_bottom",
     anchor_left: bool = (false) "anchor_left",
     anchor_right: bool = (true) "anchor_right",
     anchor_top: bool = (true) "anchor_top",
-    anchor_bottom: bool = (true) "anchor_bottom",
-    width: i32 = (-1) "width",
-    height: i32 = (-1) "height",
-    extra_field: Vec<Field> = (vec![Field::Comment]) "extra_field",
-    extra_field_newline: bool = (true) "extra_field_newline",
-    hidden_fields: Vec<Field> = (vec![Field::Keywords, Field::Categories]) "hidden_fields",
-    name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
-    hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
+    autostart_apps: bool = (false) "autostart_apps",
     cgroups: bool = (true) "cgroups",
     cgroups_detach: bool = (false) "cgroups_detach",
-    command_prefix: String = (":".into()) "command_prefix",
-    exclude: Vec<String> = (Vec::new()) "exclude",
-    term_command: Option<String> = (None) "term_command",
     close_on_unfocus: bool = (true) "close_on_unfocus",
+    command_prefix: String = (":".into()) "command_prefix",
+    disable_file_monitor: bool = (false) "disable_file_monitor",
+    exclude: Vec<String> = (Vec::new()) "exclude",
+    exclusive: bool = (true) "exclusive",
+    extra_field_newline: bool = (true) "extra_field_newline",
+    extra_field: Vec<Field> = (vec![Field::Comment]) "extra_field",
+    frequent_first: bool = (false) "frequent_first",
+    height: i32 = (-1) "height",
+    hidden_fields: Vec<Field> = (vec![Field::Keywords, Field::Categories]) "hidden_fields",
+    hide_extra_if_contained: bool = (true) "hide_extra_if_contained",
+    icon_size: i32 = (64) "icon_size",
+    lines: i32 = (2) "lines",
+    margin_bottom: i32 = (0) "margin_bottom",
+    margin_left: i32 = (0) "margin_left",
+    margin_right: i32 = (0) "margin_right",
+    margin_top: i32 = (0) "margin_top",
+    markup_default: Vec<Attribute> = (Vec::new()) "markup_default" [deserialize_with = "deserialize_markup"],
+    markup_extra: Vec<Attribute> = (parse_attributes("font_style=\"italic\" font_size=\"smaller\"").unwrap()) "markup_extra" [deserialize_with = "deserialize_markup"],
+    markup_highlight: Vec<Attribute> = (parse_attributes("foreground=\"red\" underline=\"double\"").unwrap()) "markup_highlight" [deserialize_with = "deserialize_markup"],
+    name_overrides: HashMap<String, String> = (HashMap::new()) "name_overrides",
+    prune_history: u32 = (0) "prune_history",
+    recent_first: bool = (true) "recent_first",
     set_gpu_variable: Option<String> = (None) "set_gpu_variable",
-    start_history_only: bool = (false) "start_history_only"
+    start_history_only: bool = (false) "start_history_only",
+    term_command: Option<String> = (None) "term_command",
+    width: i32 = (-1) "width"
 });
 
 fn deserialize_markup<'de, D>(deserializer: D) -> Result<Vec<Attribute>, D::Error>
@@ -100,6 +102,7 @@ impl Config {
             _ => "".to_owned(),
         };
         let config: Config = toml::from_str(&config_str).expect("Cannot parse config: {}");
+        log::debug!("config:\n{:#?}", &config);
         config
     }
 }
