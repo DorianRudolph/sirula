@@ -63,13 +63,12 @@ recent_first = true # sort matches of equal quality by most recently used
 prune_history = 0
 
 # command for applications run in terminal (default uses "$TERMINAL -e")
-# term_command = "alacritty -e {}"
-# set_gpu_variable = "PRIME" # variable to set to offload if specified by application (default doesn't offload)
+#term_command = "alacritty -e {}"
+# variable to set to offload if specified by application (default doesn't offload)
+#set_gpu_variable = "PRIME" 
 
 ## daemon mode
-
 disable_file_monitor = false # disable file monitor if in daemon mode, may improve background resources usage
-
 # Automatically starts all apps in $XDG_CONFIG_HOME/autostart
 # Many DEs already do this, probably only useful for WMs
 autostart_apps = false

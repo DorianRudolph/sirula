@@ -351,7 +351,7 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
 
 fn main() {
     Builder::from_env("SIRULA_LOG").init();
-    info!("sirula {}", env!("CARGO_PKG_VERSION"));
+    info!("sirula {} {}", env!("CARGO_PKG_VERSION"), env!("GIT_HASH"));
 
     set_locale(LC_ALL, "");
 
