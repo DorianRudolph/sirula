@@ -1,4 +1,4 @@
-use super::util::get_history_file;
+use crate::util::get_history_file;
 
 use log::error;
 use serde_derive::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Copy, Clone, Default, Eq, Deserialize, Serialize)]
+#[derive(Copy, Clone, Default, Eq, Deserialize, Serialize, Debug)]
 pub struct HistoryData {
     pub last_used: u64,
     pub usage_count: u32,

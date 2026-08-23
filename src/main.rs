@@ -30,6 +30,8 @@ use log::info;
 
 use std::{cell::RefCell, collections::HashMap, env::args, rc::Rc};
 
+use crate::history::*;
+
 mod consts;
 use consts::*;
 
@@ -44,9 +46,6 @@ use app_entry::*;
 
 mod locale;
 use locale::*;
-
-mod history;
-use history::*;
 
 fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     let config = Rc::new(RefCell::new(Config::load()));

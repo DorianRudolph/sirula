@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with sirula.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::{consts::*, Config, Field, HistoryData};
+use super::{consts::*, Config, Field};
 use crate::locale::string_collate;
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
@@ -34,6 +34,9 @@ use std::{cmp::Ordering, collections::HashMap};
 
 pub mod desktop_entry;
 use desktop_entry::DesktopEntry;
+
+pub mod history;
+use history::*;
 
 #[derive(Eq)]
 pub struct AppEntry {
