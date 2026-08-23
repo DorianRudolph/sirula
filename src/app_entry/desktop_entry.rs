@@ -220,6 +220,39 @@ impl DesktopEntry {
     }
 }
 
+pub fn setup_monitor(application: &gtk::Application) {
+    use gio::prelude::FileExt;
+    use glib::ObjectExt;
+    use crate::clone;
+    use gio::prelude::ActionGroupExt;
+    use gio::prelude::FileMonitorExt;
+
+    for (i, path) in default_paths().enumerate() {
+        let dir = gio::File::for_path(&path);
+
+        let monitor = dir
+            .monitor_directory(
+                gio::FileMonitorFlags::NONE,
+                gio::Cancellable::NONE,
+            )
+            .expect("failed to monitor directory");
+
+        monitor.connect_changed(clone!(application => move |_monitor, file, _other_file, event| {
+            use gio::FileMonitorEvent::*;
+            if event == Created || event == Changed || event== Deleted {
+                application.activate_action("reload", None);
+            };
+            if let Some(name) = file.basename() {
+                info!("file changed: {}/{} ({})", &path.display(), name.display(), event);
+            }
+        }));
+
+        unsafe {
+            application.set_data(&format!("file-monitor-{i}"), monitor);
+        }
+    }
+}
+
 fn get_exec_key(group: &Group) -> Option<String> {
     match get_key(group, "TryExec") {
         Some(try_exec) => match which(&try_exec) {

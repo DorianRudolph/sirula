@@ -334,6 +334,13 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     application.connect_activate(clone!(window => move |_| {
         window.show_all()
     }));
+
+    gtk::glib::source::unix_signal_add_local(libc::SIGUSR1, clone!(application => move || {
+        application.activate_action("reload", None);
+        glib::Continue(true)
+    }));
+
+    app_entry::desktop_entry::setup_monitor(application);
 }
 
 fn main() {
