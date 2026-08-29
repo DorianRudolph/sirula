@@ -299,13 +299,16 @@ fn app_startup(application: &gtk::Application, daemon_mode: bool) {
     listbox.connect_row_activated(
         clone!(config, entry, entries, window, history, daemon_mode => move |_, r| {
             {
-                let es = entries.borrow();
-                let e = &es[r];
+                let mut es = entries.borrow_mut();
+                let e = es.get_mut(r).unwrap();
                 if !e.hidden() {
                     e.info.run(config.clone());
 
                     let mut history = history.borrow_mut();
                     update_history(&mut history, &format!("{}.desktop", e.info.id));
+                    if daemon_mode {
+                        e.update_score(&config, &history);
+                    }
                     save_history(&history);
                 }
             }

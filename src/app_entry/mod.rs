@@ -30,7 +30,7 @@ use gtk::{
 use pango::{AttrList, Attribute, EllipsizeMode};
 use regex::RegexSet;
 
-use std::{cmp::Ordering, collections::HashMap};
+use std::{cmp::Ordering, collections::HashMap, cell::RefCell, rc::Rc};
 
 pub mod desktop_entry;
 use desktop_entry::DesktopEntry;
