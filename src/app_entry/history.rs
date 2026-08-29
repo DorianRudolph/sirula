@@ -49,17 +49,18 @@ pub fn save_history(history: &HashMap<String, HistoryData>) {
         .expect("Cannot write to history file");
 }
 
-pub fn update_history(history: &mut HashMap<String, HistoryData>, id: &str) {
+pub fn update_history(history: &mut HashMap<String, HistoryData>, id: &str) -> HistoryData {
     let epoch = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
+        .expect("Time went backwards")
+        .as_secs();
     let usage_count = history.get(&id.to_string()).map_or(0, |h| h.usage_count) + 1;
+    let historydata = HistoryData {
+        last_used: epoch,
+        usage_count,
+    };
 
-    history.insert(
-        id.to_string(),
-        HistoryData {
-            last_used: epoch.as_secs(),
-            usage_count,
-        },
-    );
+    history.insert(id.to_string(), historydata);
+
+    historydata
 }

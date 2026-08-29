@@ -107,22 +107,38 @@ impl AppEntry {
 }
 
 impl AppEntry {
-    pub fn update_score(
+    // pub fn update_score(
+    // &mut self,
+    // config: &Rc<RefCell<Config>>,
+    // history: &HashMap<String, HistoryData>,
+    // ) {
+    // let config = config.borrow();
+    // let history_data = history
+    // .get(&format!("{}.desktop", self.info.id))
+    // .copied()
+    // .unwrap_or_default();
+    // let usage_count = if config.frequent_first {
+    // history_data.usage_count
+    // } else {
+    // 0
+    // };
+    // self.score = default_score(config.start_history_only, usage_count);
+    // }
+
+    pub fn run(
         &mut self,
-        config: &Rc<RefCell<Config>>,
-        history: &HashMap<String, HistoryData>,
+        config: Rc<RefCell<Config>>,
+        history: Rc<RefCell<HashMap<String, HistoryData>>>,
     ) {
-        let config = config.borrow();
-        let history_data = history
-            .get(&format!("{}.desktop", self.info.id))
-            .copied()
-            .unwrap_or_default();
-        let usage_count = if config.frequent_first {
-            history_data.usage_count
-        } else {
-            0
-        };
-        self.score = default_score(config.start_history_only, usage_count);
+        if self.hidden() {
+            return;
+        }
+
+        self.info.run(config.clone());
+
+        let mut history = history.borrow_mut();
+        self.history = update_history(&mut history, &format!("{}.desktop", self.info.id));
+        save_history(&history);
     }
 }
 
