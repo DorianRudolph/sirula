@@ -106,6 +106,26 @@ impl AppEntry {
     }
 }
 
+impl AppEntry {
+    pub fn update_score(
+        &mut self,
+        config: &Rc<RefCell<Config>>,
+        history: &HashMap<String, HistoryData>,
+    ) {
+        let config = config.borrow();
+        let history_data = history
+            .get(&format!("{}.desktop", self.info.id))
+            .copied()
+            .unwrap_or_default();
+        let usage_count = if config.frequent_first {
+            history_data.usage_count
+        } else {
+            0
+        };
+        self.score = default_score(config.start_history_only, usage_count);
+    }
+}
+
 impl PartialEq for AppEntry {
     fn eq(&self, other: &Self) -> bool {
         self.score.eq(&other.score) && self.history.eq(&other.history)
