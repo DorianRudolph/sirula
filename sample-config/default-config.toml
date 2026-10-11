@@ -72,6 +72,8 @@ disable_file_monitor = false # disable file monitor if in daemon mode, may impro
 # Automatically starts all apps in $XDG_CONFIG_HOME/autostart
 # Many DEs already do this, probably only useful for WMs
 autostart_apps = false
+# ignore systemwide autostart apps, as some stuff puts itself there
+autostart_ignore_systemwide_apps = false
 
 # specify name overrides (id is the name of the desktop file)
 [name_overrides]

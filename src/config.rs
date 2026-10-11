@@ -56,6 +56,7 @@ make_config!(Config {
     anchor_right: bool = (true) "anchor_right",
     anchor_top: bool = (true) "anchor_top",
     autostart_apps: bool = (false) "autostart_apps",
+    autostart_ignore_systemwide_apps: bool = (false) "autostart_ignore_systemwide_apps",
     cgroups: bool = (true) "cgroups",
     cgroups_detach: bool = (false) "cgroups_detach",
     close_on_unfocus: bool = (true) "close_on_unfocus",

@@ -56,10 +56,11 @@ macro_rules! skip_none {
 }
 
 impl DesktopEntry {
-    pub fn get(path: Option<String>) -> Vec<DesktopEntry> {
+    pub fn get(path: Option<Vec<String>>) -> Vec<DesktopEntry> {
         let locales = get_languages_from_env();
+        let autostart_apps = path.is_some();
         let entries = if let Some(path) = path {
-            Iter::new(vec![PathBuf::from(path)].into_iter())
+            Iter::new(path.into_iter().map(|x| PathBuf::from(x)))
         } else {
             Iter::new(default_paths())
         }
@@ -99,7 +100,9 @@ impl DesktopEntry {
                         only_show_in = only_show_in_str.is_some();
                     }
                 };
-                if not_show_in || only_show_in || hidden || nodisplay {
+
+                if not_show_in || only_show_in || hidden || (!autostart_apps && nodisplay) {
+                    out.remove(&id);
                     debug!("skipping: {} (hidden)", &id);
                     continue;
                 }
@@ -256,11 +259,17 @@ pub fn setup_monitor(application: &gtk::Application) {
 }
 
 pub fn autostart_apps(config: Rc<RefCell<Config>>) {
-    let dir = format!(
+    let mut dirs = vec![format!(
         "{}/autostart",
         var("XDG_CONFIG_HOME").unwrap_or(format!("{}/{}", var("HOME").unwrap(), ".config"))
-    );
-    let entries = DesktopEntry::get(Some(dir));
+    )];
+    if !config.borrow().autostart_ignore_systemwide_apps {
+        dirs.push(format!(
+            "{}/autostart",
+            var("XDG_CONFIG_DIRS").unwrap_or("/etc/xdg".to_string())
+        ))
+    }
+    let entries = DesktopEntry::get(Some(dirs));
     for entry in entries {
         entry.run(config.clone());
     }
